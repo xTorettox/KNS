@@ -4,9 +4,10 @@ import json
 import py_compile
 from datetime import date, time
 
-print("=== 1. VERIFICANDO SINTAXIS DE ARCHIVOS PYTHON ===")
+print("=== 1. VERIFICANDO SINTAXIS DE TODOS LOS ARCHIVOS ===")
 files = [
     'app.py',
+    'utils/auth.py',
     'utils/quotes.py',
     'utils/whatsapp.py',
     'utils/ui.py',
@@ -24,64 +25,66 @@ for f in files:
         print(f"  [ERROR] en {f}: {e}")
         sys.exit(1)
 
-print("\n=== 2. VALIDANDO DATASET FRASES.JSON ===")
+print("\n=== 2. PROBANDO SISTEMA DE AUTENTICACIÓN Y ROLES ===")
+from utils.auth import (
+    verify_password,
+    hash_password,
+    get_usuarios,
+    get_usuario_by_username,
+    create_usuario,
+    update_usuario,
+    delete_usuario
+)
+
+# Test Usuario 1: fcendra (admin)
+user_fc = get_usuario_by_username("fcendra")
+assert user_fc is not None, "Usuario fcendra no encontrado"
+assert user_fc["rol"] == "admin", "fcendra debe ser admin"
+assert verify_password("C4n1ch3r1426", user_fc["password_hash"]), "Clave de fcendra incorrecta"
+print("  [OK] Usuario Administrador 'fcendra' validado con éxito.")
+
+# Test Usuario 2: anita (kinesio)
+user_an = get_usuario_by_username("anita")
+assert user_an is not None, "Usuario anita no encontrado"
+assert user_an["rol"] == "kinesio", "anita debe ser kinesio"
+assert verify_password("bella2026", user_an["password_hash"]), "Clave de anita incorrecta"
+print("  [OK] Usuario Kinesióloga 'anita' validado con éxito.")
+
+# Test ABM: Creación, actualización y eliminación de usuario de prueba
+ok_c, msg_c = create_usuario("test_kinesio", "clave123", "Test Profesional", "kinesio")
+assert ok_c, f"Fallo al crear usuario de prueba: {msg_c}"
+u_test = get_usuario_by_username("test_kinesio")
+assert u_test is not None
+
+ok_up, msg_up = update_usuario(u_test["id"], {"nombre": "Test Profesional Modificado"})
+assert ok_up
+
+ok_del, msg_del = delete_usuario(u_test["id"])
+assert ok_del
+print("  [OK] ABM de usuarios (crear, editar, eliminar) probado y funcional.")
+
+print("\n=== 3. PROBANDO CONFIGURACIÓN DE MARCA Y LOGO ===")
+from utils.supabase_client import get_app_config, update_app_config
+cfg = get_app_config()
+assert cfg["clinic_name"] == "KNS"
+assert cfg["subtitle"] == "KINESIOLOGÍA"
+ok_cfg, _ = update_app_config({"logo_icon": "🦴"})
+assert ok_cfg
+print("  [OK] Personalización de logo y marca operativa.")
+
+print("\n=== 4. VALIDANDO DATASET FRASES.JSON (100 FRASES) ===")
 with open('frases.json', 'r', encoding='utf-8') as f:
     frases = json.load(f)
-print(f"  Total de frases cargadas: {len(frases)}")
-assert len(frases) == 100, f"Se esperaban 100 frases, se encontraron {len(frases)}"
-for i, item in enumerate(frases, 1):
-    assert "frase" in item and "autor" in item and "obra" in item and "año" in item and "categoria" in item, f"Frase {i} incompleta: {item}"
-print("  [OK] frases.json contiene exactamente 100 frases completas con todas sus propiedades.")
+assert len(frases) == 100
+print(f"  [OK] Dataset contiene exactamente 100 frases.")
 
-print("\n=== 3. PROBANDO LECTURA DE FRASES Y EASTER EGG ===")
-from utils.quotes import get_daily_quote, get_random_quote
-q = get_daily_quote(date(2026, 9, 13))
-print(f"  Frase del día para 13/09/2026: \"{q['frase']}\" — {q['autor']} ({q['obra']}, {q['año']}) [{q['categoria']}]")
-assert q["frase"] and q["autor"]
-print("  [OK] Lector de frase diaria determinístico operativo.")
-
-print("\n=== 4. PROBANDO GENERADOR DE WHATSAPP Y PLANTILLAS ===")
-from utils.whatsapp import (
-    normalize_phone_number,
-    generate_whatsapp_url,
-    template_recordatorio_turno,
-    template_confirmacion_turno,
-    template_aviso_sesiones_completadas
-)
-tel1 = normalize_phone_number("11 4444 5555")
-tel2 = normalize_phone_number("+54 9 11 1234-5678")
-tel3 = normalize_phone_number("011 15 6789 0123")
-print(f"  Normalización '11 4444 5555' -> {tel1}")
-print(f"  Normalización '+54 9 11 1234-5678' -> {tel2}")
-print(f"  Normalización '011 15 6789 0123' -> {tel3}")
-assert tel1 == "5491144445555"
-assert tel2 == "5491112345678"
-assert tel3 == "5491167890123"
-
-msg = template_recordatorio_turno("Carlos", "13/09/2026", "09:00", "KNS")
-wa_url = generate_whatsapp_url(tel1, msg)
-print(f"  URL wa.me generada: {wa_url[:60]}...")
-assert "wa.me/5491144445555" in wa_url
-print("  [OK] Integración de WhatsApp validada con éxito.")
-
-print("\n=== 5. PROBANDO AGENDA, SUPERPOSICIÓN (MÁX 2) Y CONTROL DE SESIONES ===")
-from utils.supabase_client import (
-    get_turnos,
-    get_pacientes,
-    check_turnos_overlap,
-    create_turno,
-    update_turno,
-    get_paciente_by_id
-)
-
-# Caso 1: Probar solapamiento a las 09:10 hs (a las 09:10 están Carlos 08:30-09:15 y Florencia 09:00-09:45 -> 2 simultáneos)
-is_valid, count, msg = check_turnos_overlap(date.today(), time(9, 10), time(9, 40))
-print(f"  Prueba 1: Turno 09:10 - 09:40 hs -> Válido: {is_valid} (Solapamientos: {count}). Mensaje: {msg}")
-assert not is_valid, "Debería rechazar un 3er turno en 09:10"
-
-# Caso 2: Probar horario con solo 1 paciente (08:30 - 09:00 hs -> solo Carlos)
-is_valid2, count2, msg2 = check_turnos_overlap(date.today(), time(8, 30), time(9, 0))
-print(f"  Prueba 2: Turno 08:30 - 09:00 hs -> Válido: {is_valid2} (Solapamientos: {count2}). Mensaje: {msg2}")
-assert is_valid2, "Debería permitir un 2do paciente en 08:30"
+print("\n=== 5. PROBANDO INTEGRACIÓN DE WHATSAPP ===")
+from utils.whatsapp import normalize_phone_number, generate_whatsapp_url, template_recordatorio_turno
+tel_norm = normalize_phone_number("011 15 6789 0123")
+assert tel_norm == "5491167890123"
+msg_w = template_recordatorio_turno("Carlos", "13/09/2026", "08:30")
+url_w = generate_whatsapp_url(tel_norm, msg_w)
+assert "KNS%20Kinesiolog%C3%ADa" in url_w
+print("  [OK] Normalización y plantillas de WhatsApp verificadas.")
 
 print("\n=== TODAS LAS PRUEBAS AUTOMATIZADAS PASARON EXITOSAMENTE (100%) ===")

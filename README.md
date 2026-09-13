@@ -1,4 +1,4 @@
-# 🩺 KNS - Sistema de Gestión de Consultorio Kinesiológico
+# 🩺 KNS - Sistema de Gestión en Kinesiología
 
 Aplicación web profesional desarrollada en **Python** y **Streamlit**, con base de datos **PostgreSQL** y almacenamiento de imágenes en **Supabase Storage**. Diseñada específicamente para optimizar la operativa diaria de kinesiólogos y centros de rehabilitación física.
 

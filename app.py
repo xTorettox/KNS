@@ -1,58 +1,106 @@
 """
-KNS - Sistema de Gestión de Consultorio Kinesiológico
-Punto de entrada principal de la aplicación Streamlit.
+KNS - Sistema de Gestión en Kinesiología
+Punto de entrada principal de la aplicación Streamlit con autenticación, roles y personalización de marca.
 """
 import streamlit as st
 from datetime import date
 
-# 1. Configuración de página de Streamlit (debe ser la primera llamada de Streamlit)
+# 1. Configuración de página de Streamlit
 st.set_page_config(
-    page_title="KNS - Consultorio Kinesiológico",
+    page_title="KNS - Kinesiología",
     page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. Importaciones de módulos y vistas
+# 2. Importaciones de utilidades, autenticación y vistas
 from utils.ui import inject_custom_css, render_daily_quote_box
 from utils.quotes import get_daily_quote
+from utils.auth import (
+    is_authenticated,
+    get_current_user,
+    is_admin,
+    logout,
+    render_login_view
+)
+from utils.supabase_client import get_app_config
 from views.agenda import render_agenda_view
 from views.pacientes import render_pacientes_view
 from views.historial import render_historial_view
 from views.configuracion import render_configuracion_view
 
 def main():
-    # Inyectar estilos CSS visuales personalizados
+    # Inyectar estilos visuales CSS
     inject_custom_css()
 
     # ==============================================================================
-    # SIDEBAR: NAVEGACIÓN, INFORMACIÓN PROFESIONAL Y EASTER EGG DIARIO
+    # VERIFICACIÓN DE AUTENTICACIÓN
+    # ==============================================================================
+    if not is_authenticated():
+        render_login_view()
+        return
+
+    current_user = get_current_user() or {}
+    user_name = current_user.get("nombre", "Usuario")
+    user_role = current_user.get("rol", "kinesio")
+    app_config = get_app_config()
+
+    # ==============================================================================
+    # SIDEBAR: LOGO DINÁMICO, PERFIL, NAVEGACIÓN Y EASTER EGG
     # ==============================================================================
     with st.sidebar:
-        # Encabezado del Consultorio
+        # LOGO Y MARCA DINÁMICOS
+        custom_logo_bytes = app_config.get("custom_logo_bytes")
+        logo_icon = app_config.get("logo_icon", "🩺")
+        clinic_name = app_config.get("clinic_name", "KNS")
+        subtitle = app_config.get("subtitle", "KINESIOLOGÍA")
+
+        st.markdown("<div style='text-align: center; padding: 0.5rem 0;'>", unsafe_allow_html=True)
+        if custom_logo_bytes:
+            st.image(custom_logo_bytes, width=100)
+        else:
+            st.markdown(f"<div style='font-size: 2.2rem; margin-bottom: -5px;'>{logo_icon}</div>", unsafe_allow_html=True)
+
         st.markdown(
-            """
-            <div style="text-align: center; padding: 1rem 0 0.5rem 0;">
-                <div style="font-size: 2.2rem; margin-bottom: -5px;">🩺</div>
-                <h2 style="margin: 0; color: #38bdf8; font-weight: 800; letter-spacing: -0.5px;">KNS</h2>
-                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; font-weight: 600;">CONSULTORIO KINESIOLÓGICO</p>
+            f"""
+                <h2 style="margin: 0; color: #38bdf8; font-weight: 800; letter-spacing: -0.5px;">{clinic_name}</h2>
+                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">{subtitle}</p>
             </div>
             <hr style="margin: 0.8rem 0; border-color: rgba(255,255,255,0.08);"/>
             """,
             unsafe_allow_html=True
         )
 
-        # Menú de Navegación
+        # INFORMACIÓN DEL USUARIO LOGUEADO
+        rol_label = "Administrador" if is_admin() else "Kinesiólogo/a"
+        rol_color = "#38bdf8" if is_admin() else "#4ade80"
+        
+        st.markdown(
+            f"""
+            <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: #f8fafc;">👤 {user_name}</div>
+                    <div style="font-size: 0.72rem; color: {rol_color}; font-weight: 600;">{rol_label}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # MENÚ DE NAVEGACIÓN SEGÚN ROL
         st.markdown("<p style='font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;'>MENÚ PRINCIPAL</p>", unsafe_allow_html=True)
         
         menu_options = [
             "📅 Agenda de Turnos",
             "👥 Gestión de Pacientes",
-            "🩺 Historial Clínico",
-            "⚙️ Configuración & Sistema"
+            "🩺 Historial Clínico"
         ]
 
-        if "nav_selection" not in st.session_state:
+        # Solo el Administrador tiene acceso a Configuración y Sistema
+        if is_admin():
+            menu_options.append("⚙️ Configuración & Sistema")
+
+        if "nav_selection" not in st.session_state or st.session_state.nav_selection not in menu_options:
             st.session_state.nav_selection = menu_options[0]
 
         selected_page = st.radio(
@@ -63,9 +111,9 @@ def main():
         )
         st.session_state.nav_selection = selected_page
 
-        st.markdown("<hr style='margin: 1.2rem 0 0.8rem 0; border-color: rgba(255,255,255,0.08);'/>", unsafe_allow_html=True)
+        st.markdown("<hr style='margin: 1rem 0 0.8rem 0; border-color: rgba(255,255,255,0.08);'/>", unsafe_allow_html=True)
 
-        # Resumen rápido de atención
+        # Resumen de atención
         st.markdown(
             """
             <div style="background: rgba(15, 23, 42, 0.6); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; color: #94a3b8;">
@@ -77,20 +125,14 @@ def main():
             unsafe_allow_html=True
         )
 
-        # EASTER EGG: Frase del día de actores/actrices de los 80s/90s
+        # EASTER EGG: Frase del día de culto
         daily_quote = get_daily_quote(date.today())
         render_daily_quote_box(daily_quote)
 
-        # Footer sidebar
-        st.markdown(
-            """
-            <div style="text-align: center; margin-top: 1.5rem; font-size: 0.7rem; color: #475569;">
-                KNS Management System v1.0<br/>
-                Desplegable en Streamlit Cloud
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        # BOTÓN CERRAR SESIÓN
+        st.markdown("<div style='margin-top: 1.2rem;'></div>", unsafe_allow_html=True)
+        if st.button("🚪 Cerrar Sesión", use_container_width=True, type="secondary"):
+            logout()
 
     # ==============================================================================
     # ENRUTAMIENTO DE VISTAS

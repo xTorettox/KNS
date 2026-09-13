@@ -68,7 +68,7 @@ def template_recordatorio_turno(
     nombre_paciente: str,
     fecha_str: str,
     hora_str: str,
-    consultorio: str = "KNS Consultorio"
+    consultorio: str = "KNS Kinesiología"
 ) -> str:
     """Mensaje para recordar turno del día o de la semana."""
     return (
@@ -83,7 +83,7 @@ def template_confirmacion_turno(
     fecha_str: str,
     hora_str: str,
     duracion_minutos: int = 45,
-    consultorio: str = "KNS Consultorio"
+    consultorio: str = "KNS Kinesiología"
 ) -> str:
     """Mensaje tras agendar un nuevo turno."""
     return (
@@ -99,7 +99,7 @@ def template_reprogramacion_turno(
     nueva_fecha_str: str,
     nueva_hora_str: str,
     motivo: Optional[str] = None,
-    consultorio: str = "KNS Consultorio"
+    consultorio: str = "KNS Kinesiología"
 ) -> str:
     """Mensaje por cambio de horario o reprogramación."""
     motivo_txt = f"\n*Motivo:* {motivo}\n" if motivo else "\n"
@@ -115,7 +115,7 @@ def template_aviso_sesiones_completadas(
     sesiones_realizadas: int,
     sesiones_totales: int,
     obra_social: Optional[str] = None,
-    consultorio: str = "KNS Consultorio"
+    consultorio: str = "KNS Kinesiología"
 ) -> str:
     """Aviso al paciente cuando está por agotar o agotó su orden de sesiones."""
     os_text = f" ({obra_social})" if obra_social else ""

@@ -221,7 +221,7 @@ def render_pacientes_view():
                     </span>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 10px; font-size: 0.88rem; color: #cbd5e1;">
-                    <div>🪪 <b>DNI:</b> {dni_act}</div>
+                    <div style="display: flex; align-items: center; gap: 6px;"><span style="background: #0284c7; color: white; font-size: 0.72rem; font-weight: 800; padding: 1px 6px; border-radius: 4px;">DNI</span> <b>{dni_act}</b></div>
                     <div>🎂 <b>Edad:</b> {edad_act} años</div>
                     <div>🏥 <b>Obra Social:</b> {os_act}</div>
                     <div>📞 <b>Teléfono:</b> {tel_act or 'No registrado'}</div>
@@ -245,7 +245,7 @@ def render_pacientes_view():
                 msg_p = template_aviso_sesiones_completadas(nom_act, ses_real_act, ses_tot_act, os_act)
                 btn_wa_txt = "📲 Solicitar Nueva Orden por WhatsApp"
             else:
-                msg_p = f"Hola {nom_act}, te escribimos del consultorio kinesiológico para coordinar tus próximas sesiones."
+                msg_p = f"Hola {nom_act}, te escribimos de KNS Kinesiología para coordinar tus próximas sesiones."
                 btn_wa_txt = "📲 Contactar por WhatsApp"
             
             wa_link_p = generate_whatsapp_url(tel_act, msg_p)
@@ -295,7 +295,7 @@ def render_pacientes_view():
         # ==============================================================================
         # PESTAÑAS DE LA FICHA: HISTORIAL CLÍNICO / EVOLUCIÓN / ARCHIVOS
         # ==============================================================================
-        tab_evols, tab_archivos, tab_turnos_pac = st.tabs(["🩺 Evolución Clínica", "📁 Imágenes y Órdenes (Storage)", "📅 Historial de Turnos"])
+        tab_evols, tab_archivos, tab_turnos_pac = st.tabs(["🩺 Evolución Clínica", "📁 Imágenes y Estudios Médicos", "📅 Historial de Turnos"])
 
         # PESTAÑA 1: EVOLUCIÓN CLÍNICA
         with tab_evols:
@@ -356,10 +356,10 @@ def render_pacientes_view():
                         unsafe_allow_html=True
                     )
 
-        # PESTAÑA 2: ARCHIVOS Y STORAGE SUPABASE (ÓRDENES, RADIOGRAFÍAS, RESONANCIAS)
+        # PESTAÑA 2: ARCHIVOS Y ESTUDIOS (ÓRDENES, RADIOGRAFÍAS, RESONANCIAS)
         with tab_archivos:
             st.markdown("##### Archivos Clínicos y Estudios de Diagnóstico")
-            st.caption("Sube órdenes médicas escaneadas, radiografías, ecografías o informes a Supabase Storage.")
+            st.caption("Sube órdenes médicas escaneadas, radiografías, ecografías o informes del paciente.")
 
             # Formulario de subida
             with st.form(f"upload_archivo_form_{sel_id}"):
@@ -369,7 +369,7 @@ def render_pacientes_view():
                 with c_up2:
                     tipo_doc = st.selectbox("Tipo de Documento", ["Orden Médica", "Radiografía (Rx)", "Resonancia Magnética (RMN)", "Ecografía", "Informe Médico", "Otro"])
                 
-                btn_upload = st.form_submit_button("⬆️ Subir a Supabase Storage", type="primary")
+                btn_upload = st.form_submit_button("⬆️ Guardar Archivo / Estudio", type="primary")
                 if btn_upload and uploaded_file is not None:
                     file_bytes = uploaded_file.getvalue()
                     ok_up, msg_up, arch_rec = upload_paciente_archivo(
@@ -379,7 +379,7 @@ def render_pacientes_view():
                         tipo_documento=tipo_doc
                     )
                     if ok_up:
-                        st.success(f"¡Archivo '{uploaded_file.name}' subido correctamente!")
+                        st.success(f"¡Archivo '{uploaded_file.name}' guardado correctamente!")
                         st.rerun()
                     else:
                         st.error(msg_up)

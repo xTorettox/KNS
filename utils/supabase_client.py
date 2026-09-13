@@ -1,5 +1,5 @@
 """
-Módulo de conexión y operaciones CRUD con Supabase (PostgreSQL y Supabase Storage).
+Módulo de base de datos y persistencia (PostgreSQL y Almacenamiento de Archivos).
 Implementa validaciones de negocio, cálculo de superposiciones de turnos y sincronización de sesiones.
 """
 import os
@@ -44,7 +44,7 @@ def get_supabase_credentials() -> Tuple[str, str, str]:
 _SUPABASE_CLIENT_INSTANCE = None
 
 def init_supabase_client() -> Optional[Any]:
-    """Crea e inicializa la instancia singleton del cliente Supabase."""
+    """Crea e inicializa la instancia singleton del cliente de base de datos."""
     global _SUPABASE_CLIENT_INSTANCE
     if _SUPABASE_CLIENT_INSTANCE is not None:
         return _SUPABASE_CLIENT_INSTANCE
@@ -57,20 +57,64 @@ def init_supabase_client() -> Optional[Any]:
         _SUPABASE_CLIENT_INSTANCE = create_client(url, key)
         return _SUPABASE_CLIENT_INSTANCE
     except Exception as e:
-        print(f"Error inicializando Supabase client: {e}")
+        print(f"Error inicializando cliente: {e}")
         return None
+
+# ==============================================================================
+# CONFIGURACIÓN GENERAL DEL SISTEMA Y LOGO
+# ==============================================================================
+
+DEFAULT_APP_CONFIG = {
+    "clinic_name": "KNS",
+    "subtitle": "KINESIOLOGÍA",
+    "logo_icon": "🩺",
+    "custom_logo_url": None,
+    "custom_logo_bytes": None,
+    "phone": "+5491112345678",
+    "address": "Consultorio Central",
+    "work_start_hour": 8,
+    "work_end_hour": 15,
+    "max_simultaneous_patients": 2
+}
+
+def get_app_config() -> Dict[str, Any]:
+    """Obtiene los parámetros de configuración de la app (nombre, subtítulo, logo)."""
+    if "app_config" not in st.session_state:
+        st.session_state.app_config = dict(DEFAULT_APP_CONFIG)
+        # Intentar cargar desde base de datos
+        client = init_supabase_client()
+        if client:
+            try:
+                res = client.table("configuracion").select("*").limit(1).execute()
+                if res.data and len(res.data) > 0:
+                    st.session_state.app_config.update(res.data[0])
+            except Exception:
+                pass
+    return st.session_state.app_config
+
+def update_app_config(new_config: Dict[str, Any]) -> Tuple[bool, str]:
+    """Guarda la configuración personalizada de la app (logo, nombre, etc.)."""
+    if "app_config" not in st.session_state:
+        st.session_state.app_config = dict(DEFAULT_APP_CONFIG)
+    st.session_state.app_config.update(new_config)
+
+    client = init_supabase_client()
+    if client:
+        try:
+            # Guardar en base de datos si existe la tabla
+            client.table("configuracion").upsert(new_config).execute()
+        except Exception:
+            pass
+    return True, "Configuración actualizada correctamente."
 
 # ==============================================================================
 # ALMACENAMIENTO EN MEMORIA / FALLBACK LOCAL
 # ==============================================================================
-# Garantiza que si la base en Supabase aún no tiene el script SQL corrido,
-# la aplicación funcione en modo demostración interactivo sin romperse.
 
-# Variable global en caso de ejecución fuera del contexto de Streamlit
 _GLOBAL_FALLBACK_DB: Optional[Dict[str, List[Dict[str, Any]]]] = None
 
 def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
-    """Inicializa y devuelve almacenamiento local en sesión de Streamlit o fallback global."""
+    """Inicializa y devuelve almacenamiento local en sesión o fallback global."""
     global _GLOBAL_FALLBACK_DB
     today_str = date.today().isoformat()
     
@@ -189,7 +233,7 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
 # ==============================================================================
 
 def get_pacientes(activo_only: bool = False, query: str = "") -> List[Dict[str, Any]]:
-    """Obtiene la lista de pacientes desde Supabase o fallback local."""
+    """Obtiene la lista de pacientes desde base de datos o fallback local."""
     client = init_supabase_client()
     if client:
         try:
@@ -203,7 +247,6 @@ def get_pacientes(activo_only: bool = False, query: str = "") -> List[Dict[str, 
                 pacientes = [p for p in pacientes if q in str(p.get("nombre_completo", "")).lower() or q in str(p.get("dni", "")).lower() or q in str(p.get("obra_social", "")).lower()]
             return pacientes
         except Exception:
-            # Fallback a local si la tabla aún no existe
             pass
 
     store = _get_local_store()
@@ -235,7 +278,7 @@ def get_paciente_by_id(paciente_id: str) -> Optional[Dict[str, Any]]:
     return None
 
 def create_paciente(paciente_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-    """Crea un nuevo paciente en la base de datos."""
+    """Crea un nuevo paciente en el sistema."""
     if not paciente_data.get("nombre_completo"):
         return False, "El nombre y apellido son obligatorios.", None
 
@@ -246,8 +289,7 @@ def create_paciente(paciente_data: Dict[str, Any]) -> Tuple[bool, str, Optional[
             if res.data:
                 return True, "Paciente registrado exitosamente.", res.data[0]
         except Exception as e:
-            # Si falla la llamada remota, guardar en local
-            print(f"Supabase create_paciente error: {e}")
+            print(f"Error creando paciente: {e}")
 
     # Fallback local
     store = _get_local_store()
@@ -258,7 +300,7 @@ def create_paciente(paciente_data: Dict[str, Any]) -> Tuple[bool, str, Optional[
     new_p.setdefault("sesiones_realizadas", 0)
     new_p.setdefault("activo", True)
     store["pacientes"].append(new_p)
-    return True, "Paciente guardado exitosamente.", new_p
+    return True, "Paciente registrado exitosamente.", new_p
 
 def update_paciente(paciente_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
     """Actualiza los datos de un paciente."""
@@ -270,7 +312,7 @@ def update_paciente(paciente_id: str, updates: Dict[str, Any]) -> Tuple[bool, st
             if res.data:
                 return True, "Paciente actualizado exitosamente."
         except Exception as e:
-            print(f"Supabase update_paciente error: {e}")
+            print(f"Error actualizando paciente: {e}")
 
     store = _get_local_store()
     for p in store["pacientes"]:
@@ -287,7 +329,7 @@ def delete_paciente(paciente_id: str) -> Tuple[bool, str]:
             client.table("pacientes").delete().eq("id", str(paciente_id)).execute()
             return True, "Paciente eliminado correctamente."
         except Exception as e:
-            print(f"Supabase delete_paciente error: {e}")
+            print(f"Error eliminando paciente: {e}")
 
     store = _get_local_store()
     store["pacientes"] = [p for p in store["pacientes"] if str(p.get("id")) != str(paciente_id)]
@@ -311,7 +353,6 @@ def get_turnos(target_date: Optional[date] = None, paciente_id: Optional[str] = 
                 req = req.eq("paciente_id", str(paciente_id))
             res = req.execute()
             if res.data is not None:
-                # Normalizar objeto paciente si viene anidado
                 turnos = []
                 for t in res.data:
                     p_info = t.get("pacientes") or {}
@@ -333,7 +374,6 @@ def get_turnos(target_date: Optional[date] = None, paciente_id: Optional[str] = 
     if paciente_id:
         turnos = [t for t in turnos if str(t.get("paciente_id")) == str(paciente_id)]
     
-    # Cruzar datos con pacientes
     pacientes_map = {str(p["id"]): p for p in store["pacientes"]}
     for t in turnos:
         p = pacientes_map.get(str(t.get("paciente_id")), {})
@@ -368,7 +408,6 @@ def check_turnos_overlap(
     en cualquier intervalo horario del nuevo turno solicitado.
     """
     turnos_dia = get_turnos(target_date=target_date)
-    # Filtrar cancelados y el turno que se está editando
     turnos_activos = [
         t for t in turnos_dia
         if t.get("estado") != "Cancelado" and (exclude_turno_id is None or str(t.get("id")) != str(exclude_turno_id))
@@ -380,9 +419,8 @@ def check_turnos_overlap(
     if req_start >= req_end:
         return False, 0, "La hora de inicio debe ser anterior a la hora de finalización."
 
-    # Revisar cada minuto del intervalo solicitado
     max_coincidentes = 0
-    for m in range(req_start, req_end, 5): # Muestreo cada 5 minutos
+    for m in range(req_start, req_end, 5):
         coincidencias_en_minuto = 0
         for t in turnos_activos:
             t_start = _time_to_minutes(t.get("hora_inicio"))
@@ -409,24 +447,18 @@ def create_turno(turno_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[s
         return False, "Debe seleccionar un paciente.", None
     
     fecha_val = turno_data.get("fecha")
-    if isinstance(fecha_val, str):
-        t_date = date.fromisoformat(fecha_val)
-    else:
-        t_date = fecha_val
+    t_date = date.fromisoformat(fecha_val) if isinstance(fecha_val, str) else fecha_val
 
-    # Parsear horas
     h_inicio_val = turno_data.get("hora_inicio")
     h_fin_val = turno_data.get("hora_fin")
     
     h_inicio = time.fromisoformat(h_inicio_val) if isinstance(h_inicio_val, str) else h_inicio_val
     h_fin = time.fromisoformat(h_fin_val) if isinstance(h_fin_val, str) else h_fin_val
 
-    # Validar overlap
     valid, count, msg = check_turnos_overlap(t_date, h_inicio, h_fin)
     if not valid:
         return False, msg, None
 
-    # Formatear strings para base
     turno_payload = dict(turno_data)
     turno_payload["fecha"] = t_date.isoformat()
     turno_payload["hora_inicio"] = h_inicio.strftime("%H:%M:%S")
@@ -437,12 +469,11 @@ def create_turno(turno_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[s
         try:
             res = client.table("turnos").insert(turno_payload).execute()
             if res.data:
-                # Sincronizar sesiones si fue creado directamente como 'Asistió'
                 if turno_payload.get("estado") == "Asistió":
                     _sync_sesiones_local(p_id)
                 return True, "Turno agendado exitosamente.", res.data[0]
         except Exception as e:
-            print(f"Supabase create_turno error: {e}")
+            print(f"Error creando turno: {e}")
 
     # Fallback local
     store = _get_local_store()
@@ -459,7 +490,6 @@ def update_turno(turno_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
     client = init_supabase_client()
     turno_actual = None
 
-    # Obtener turno anterior para saber paciente
     if client:
         try:
             r = client.table("turnos").select("*").eq("id", str(turno_id)).execute()
@@ -480,7 +510,6 @@ def update_turno(turno_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
 
     paciente_id = turno_actual.get("paciente_id")
 
-    # Formatear horas si vienen como objetos time/date
     clean_updates = dict(updates)
     if "fecha" in clean_updates and not isinstance(clean_updates["fecha"], str):
         clean_updates["fecha"] = clean_updates["fecha"].isoformat()
@@ -489,7 +518,6 @@ def update_turno(turno_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
     if "hora_fin" in clean_updates and not isinstance(clean_updates["hora_fin"], str):
         clean_updates["hora_fin"] = clean_updates["hora_fin"].strftime("%H:%M:%S")
 
-    # Si se modifica horario, validar overlap
     if "hora_inicio" in clean_updates or "hora_fin" in clean_updates or "fecha" in clean_updates:
         chk_fecha = date.fromisoformat(clean_updates.get("fecha", turno_actual.get("fecha")))
         chk_hi = time.fromisoformat(clean_updates.get("hora_inicio", turno_actual.get("hora_inicio")))
@@ -507,7 +535,7 @@ def update_turno(turno_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
                 _sync_sesiones_local(paciente_id)
                 return True, "Turno actualizado correctamente."
         except Exception as e:
-            print(f"Supabase update_turno error: {e}")
+            print(f"Error actualizando turno: {e}")
 
     store = _get_local_store()
     for t in store["turnos"]:
@@ -532,7 +560,7 @@ def delete_turno(turno_id: str) -> Tuple[bool, str]:
                 _sync_sesiones_local(paciente_id)
             return True, "Turno eliminado exitosamente."
         except Exception as e:
-            print(f"Supabase delete_turno error: {e}")
+            print(f"Error eliminando turno: {e}")
 
     store = _get_local_store()
     for t in store["turnos"]:
@@ -551,7 +579,6 @@ def _sync_sesiones_local(paciente_id: str):
     client = init_supabase_client()
     if client:
         try:
-            # Contar asistencias en Supabase
             asist_res = client.table("turnos").select("id", count="exact").eq("paciente_id", str(paciente_id)).eq("estado", "Asistió").execute()
             total_asist = asist_res.count if asist_res.count is not None else 0
             client.table("pacientes").update({"sesiones_realizadas": total_asist}).eq("id", str(paciente_id)).execute()
@@ -598,7 +625,7 @@ def create_evolucion(evolucion_data: Dict[str, Any]) -> Tuple[bool, str]:
             if res.data:
                 return True, "Evolución registrada exitosamente."
         except Exception as e:
-            print(f"Supabase create_evolucion error: {e}")
+            print(f"Error creando evolucion: {e}")
 
     store = _get_local_store()
     new_ev = dict(evolucion_data)
@@ -623,7 +650,7 @@ def delete_evolucion(evolucion_id: str) -> Tuple[bool, str]:
     return True, "Evolución eliminada."
 
 # ==============================================================================
-# OPERACIONES: STORAGE Y ARCHIVOS ADJUNTOS
+# OPERACIONES: ARCHIVOS ADJUNTOS Y ESTUDIOS MÉDICOS
 # ==============================================================================
 
 def upload_paciente_archivo(
@@ -632,7 +659,7 @@ def upload_paciente_archivo(
     filename: str,
     tipo_documento: str = "Orden Médica"
 ) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
-    """Sube una imagen o documento al bucket de Supabase Storage y registra su metadata."""
+    """Guarda una imagen o documento médico vinculado al paciente."""
     if not paciente_id or not file_bytes:
         return False, "Faltan datos del archivo o paciente.", None
 
@@ -645,13 +672,11 @@ def upload_paciente_archivo(
     client = init_supabase_client()
     if client:
         try:
-            # Subir al bucket
             client.storage.from_(bucket_name).upload(
                 path=unique_filename,
                 file=file_bytes,
                 file_options={"content-type": f"image/{file_ext}"}
             )
-            # Registrar en tabla
             record = {
                 "paciente_id": str(paciente_id),
                 "nombre_archivo": filename,
@@ -662,9 +687,9 @@ def upload_paciente_archivo(
             }
             res = client.table("archivos_pacientes").insert(record).execute()
             if res.data:
-                return True, "Archivo subido exitosamente a Supabase Storage.", res.data[0]
+                return True, "Archivo guardado exitosamente.", res.data[0]
         except Exception as e:
-            print(f"Supabase Storage Upload Error: {e}")
+            print(f"Error subiendo archivo: {e}")
 
     # Fallback local
     store = _get_local_store()
@@ -676,7 +701,7 @@ def upload_paciente_archivo(
         "tipo_documento": tipo_documento,
         "tamano_bytes": tamano,
         "public_url": None,
-        "file_bytes": file_bytes, # Guardado en memoria local
+        "file_bytes": file_bytes,
         "created_at": datetime.now().isoformat()
     }
     store["archivos_pacientes"].append(record)
@@ -699,7 +724,7 @@ def get_paciente_archivos(paciente_id: str) -> List[Dict[str, Any]]:
     return [a for a in store["archivos_pacientes"] if str(a.get("paciente_id")) == str(paciente_id)]
 
 def delete_paciente_archivo(archivo_id: str, storage_path: Optional[str] = None) -> Tuple[bool, str]:
-    """Elimina el archivo de Supabase Storage y de la base de datos."""
+    """Elimina el archivo de la base de datos."""
     client = init_supabase_client()
     _, _, bucket_name = get_supabase_credentials()
 
@@ -710,7 +735,7 @@ def delete_paciente_archivo(archivo_id: str, storage_path: Optional[str] = None)
             client.table("archivos_pacientes").delete().eq("id", str(archivo_id)).execute()
             return True, "Archivo eliminado correctamente."
         except Exception as e:
-            print(f"Supabase delete archivo error: {e}")
+            print(f"Error eliminando archivo: {e}")
 
     store = _get_local_store()
     store["archivos_pacientes"] = [a for a in store["archivos_pacientes"] if str(a.get("id")) != str(archivo_id)]

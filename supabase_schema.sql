@@ -1,6 +1,6 @@
 -- ==============================================================================
--- KNS - SISTEMA DE GESTIÓN DE CONSULTORIO KINESIOLÓGICO
--- Script SQL DDL para Supabase (PostgreSQL + Storage)
+-- KNS - SISTEMA DE GESTIÓN EN KINESIOLOGÍA
+-- Script SQL DDL para Base de Datos y Almacenamiento
 -- ==============================================================================
 
 -- 1. Habilitar extensión para UUIDs
@@ -8,7 +8,51 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ==============================================================================
--- 2. TABLA: PACIENTES
+-- 2. TABLA: USUARIOS DEL SISTEMA (AUTENTICACIÓN Y ROLES)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.usuarios (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    nombre VARCHAR(255) NOT NULL,
+    rol VARCHAR(50) NOT NULL DEFAULT 'kinesio' CHECK (rol IN ('admin', 'kinesio')),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Usuarios iniciales:
+-- 1. fcendra (admin) -> clave: C4n1ch3r1426
+-- 2. anita (kinesio) -> clave: bella2026
+INSERT INTO public.usuarios (id, username, password_hash, nombre, rol, activo)
+VALUES
+    ('u1111111-1111-1111-1111-111111111111', 'fcendra', '4e58b8849b2520dafdc14df8b5b5465e94b29dc99c36df86d5e7ca6094b819f7', 'Federico Cendra', 'admin', true),
+    ('u2222222-2222-2222-2222-222222222222', 'anita', 'e551fb264cfc24cb34f2d70cb65fbf8032c52aa5bcfe6e0f498c47462fa112d7', 'Anita', 'kinesio', true)
+ON CONFLICT (username) DO UPDATE 
+SET password_hash = EXCLUDED.password_hash, rol = EXCLUDED.rol, activo = true;
+
+-- ==============================================================================
+-- 3. TABLA: CONFIGURACIÓN GENERAL Y LOGO
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.configuracion (
+    id VARCHAR(50) PRIMARY KEY DEFAULT 'app_config',
+    clinic_name VARCHAR(255) DEFAULT 'KNS',
+    subtitle VARCHAR(255) DEFAULT 'KINESIOLOGÍA',
+    logo_icon VARCHAR(50) DEFAULT '🩺',
+    custom_logo_url TEXT,
+    phone VARCHAR(50) DEFAULT '+5491112345678',
+    address VARCHAR(255) DEFAULT 'Consultorio Central',
+    work_start_hour INTEGER DEFAULT 8,
+    work_end_hour INTEGER DEFAULT 15,
+    max_simultaneous_patients INTEGER DEFAULT 2,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO public.configuracion (id, clinic_name, subtitle, logo_icon)
+VALUES ('app_config', 'KNS', 'KINESIOLOGÍA', '🩺')
+ON CONFLICT (id) DO NOTHING;
+
+-- ==============================================================================
+-- 4. TABLA: PACIENTES
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.pacientes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -26,13 +70,12 @@ CREATE TABLE IF NOT EXISTS public.pacientes (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Índices de búsqueda para pacientes
 CREATE INDEX IF NOT EXISTS idx_pacientes_nombre ON public.pacientes (nombre_completo);
 CREATE INDEX IF NOT EXISTS idx_pacientes_dni ON public.pacientes (dni);
 CREATE INDEX IF NOT EXISTS idx_pacientes_activo ON public.pacientes (activo);
 
 -- ==============================================================================
--- 3. TABLA: TURNOS (AGENDA DE 08:00 A 15:00 HS)
+-- 5. TABLA: TURNOS (AGENDA DE 08:00 A 15:00 HS)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.turnos (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -48,13 +91,12 @@ CREATE TABLE IF NOT EXISTS public.turnos (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- Índices para búsqueda por fecha y paciente
 CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON public.turnos (fecha);
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON public.turnos (paciente_id);
 CREATE INDEX IF NOT EXISTS idx_turnos_estado ON public.turnos (estado);
 
 -- ==============================================================================
--- 4. TABLA: EVOLUCIONES CLÍNICAS (HISTORIAL MÉDICO)
+-- 6. TABLA: EVOLUCIONES CLÍNICAS (HISTORIAL MÉDICO)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.evoluciones (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -71,7 +113,7 @@ CREATE INDEX IF NOT EXISTS idx_evoluciones_paciente ON public.evoluciones (pacie
 CREATE INDEX IF NOT EXISTS idx_evoluciones_fecha ON public.evoluciones (fecha);
 
 -- ==============================================================================
--- 5. TABLA: ARCHIVOS ADJUNTOS (ÓRDENES, RADIOGRAFÍAS, RESONANCIAS)
+-- 7. TABLA: ARCHIVOS ADJUNTOS (ÓRDENES, RADIOGRAFÍAS, RESONANCIAS)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.archivos_pacientes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -87,7 +129,7 @@ CREATE TABLE IF NOT EXISTS public.archivos_pacientes (
 CREATE INDEX IF NOT EXISTS idx_archivos_paciente ON public.archivos_pacientes (paciente_id);
 
 -- ==============================================================================
--- 6. FUNCIÓN Y TRIGGER: CONTROL AUTOMÁTICO DE SESIONES POR ASISTENCIA
+-- 8. FUNCIÓN Y TRIGGER: CONTROL AUTOMÁTICO DE SESIONES POR ASISTENCIA
 -- ==============================================================================
 CREATE OR REPLACE FUNCTION sync_paciente_sesiones()
 RETURNS TRIGGER AS $$
@@ -101,7 +143,7 @@ BEGIN
         target_paciente_id := NEW.paciente_id;
     END IF;
 
-    -- Contar cantidad de turnos con estado 'Asistió'
+    -- Contar turnos con estado 'Asistió'
     SELECT COUNT(*) INTO total_asistencias
     FROM public.turnos
     WHERE paciente_id = target_paciente_id AND estado = 'Asistió';
@@ -123,13 +165,12 @@ FOR EACH ROW
 EXECUTE FUNCTION sync_paciente_sesiones();
 
 -- ==============================================================================
--- 7. CONFIGURACIÓN DE STORAGE BUCKET: pacientes-adjuntos
+-- 9. CONFIGURACIÓN DE ALMACENAMIENTO (STORAGE BUCKET)
 -- ==============================================================================
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('pacientes-adjuntos', 'pacientes-adjuntos', true)
 ON CONFLICT (id) DO UPDATE SET public = true;
 
--- Políticas de acceso para el bucket (público para lectura y subida)
 DROP POLICY IF EXISTS "Acceso publico lectura adjuntos" ON storage.objects;
 CREATE POLICY "Acceso publico lectura adjuntos"
 ON storage.objects FOR SELECT
@@ -146,14 +187,21 @@ ON storage.objects FOR DELETE
 USING (bucket_id = 'pacientes-adjuntos');
 
 -- ==============================================================================
--- 8. POLÍTICAS ROW LEVEL SECURITY (RLS)
+-- 10. POLÍTICAS ROW LEVEL SECURITY (RLS)
 -- ==============================================================================
+ALTER TABLE public.usuarios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.configuracion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pacientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.turnos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.evoluciones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.archivos_pacientes ENABLE ROW LEVEL SECURITY;
 
--- Políticas para acceso total con anon/service keys
+DROP POLICY IF EXISTS "Permitir todo en usuarios" ON public.usuarios;
+CREATE POLICY "Permitir todo en usuarios" ON public.usuarios FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir todo en configuracion" ON public.configuracion;
+CREATE POLICY "Permitir todo en configuracion" ON public.configuracion FOR ALL USING (true) WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Permitir todo en pacientes" ON public.pacientes;
 CREATE POLICY "Permitir todo en pacientes" ON public.pacientes FOR ALL USING (true) WITH CHECK (true);
 
@@ -167,13 +215,13 @@ DROP POLICY IF EXISTS "Permitir todo en archivos_pacientes" ON public.archivos_p
 CREATE POLICY "Permitir todo en archivos_pacientes" ON public.archivos_pacientes FOR ALL USING (true) WITH CHECK (true);
 
 -- ==============================================================================
--- 9. DATOS DE PRUEBA INICIALES (DEMOSTRACIÓN KINESIOLOGÍA)
+-- 11. DATOS DE PRUEBA INICIALES (KINESIOLOGÍA)
 -- ==============================================================================
 INSERT INTO public.pacientes (id, nombre_completo, dni, edad, telefono, obra_social, patologia, sesiones_totales, sesiones_realizadas, activo, notas_generales)
 VALUES
     ('a1111111-1111-1111-1111-111111111111', 'Carlos Menéndez', '28456123', 46, '+5491144445555', 'OSDE 210', 'Lumbalgia mecánica con irradiación a miembro inferior derecho', 10, 3, true, 'Derivado por Dr. Rossi. Trae RMN lumbar.'),
     ('a2222222-2222-2222-2222-222222222222', 'Florencia Varela', '34123890', 32, '+5491155556666', 'Swiss Medical', 'Tendinopatía del manguito rotador derecho', 10, 5, true, 'Dolor en abducción > 90°. Deportista aficionada (crossfit).'),
-    ('a3333333-3333-3333-3333-333333333333', 'Esteban Lamponne', '25890432', 50, '+5491166667777', 'Galeno Silver', 'Esguince de tobillo grado II (LPAA)', 8, 1, true, 'Fase subaguda con edema residual. Buena respuesta al kinesiotape.')
+    ('a3333333-3333-3333-3333-333333333333', 'Esteban Lamponne', '25890432', 50, '+5491166667777', 'Galeno Silver', 'Esguince de tobillo grado II (LPAA)', 8, 1, true, 'Fase subaguda con edema residual. Buena respuesta al vendaje funcional.')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.turnos (id, paciente_id, fecha, hora_inicio, hora_fin, duracion_minutos, estado, motivo_ajuste, notas)
@@ -182,9 +230,3 @@ VALUES
     ('b2222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', CURRENT_DATE, '09:00:00', '09:45:00', 45, 'Pendiente', NULL, 'Ultrasonido + movilidad escapulotorácica'),
     ('b3333333-3333-3333-3333-333333333333', 'a3333333-3333-3333-3333-333333333333', CURRENT_DATE, '10:00:00', '10:30:00', 30, 'Pendiente', NULL, 'Crioterapia + propiocepción en bosu')
 ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO public.evoluciones (paciente_id, turno_id, fecha, nota_clinica, tratamiento_aplicado, escala_dolor_eva)
-VALUES
-    ('a1111111-1111-1111-1111-111111111111', 'b1111111-1111-1111-1111-111111111111', CURRENT_DATE - INTERVAL '2 day', 'Paciente refiere alivio del dolor irradiado tras la sesión anterior. Refiere molestia puntual al levantarse.', 'TENS 20 min + elongación de psoas e isquiotibiales + ejercicios de core', 4),
-    ('a2222222-2222-2222-2222-222222222222', 'b2222222-2222-2222-2222-222222222222', CURRENT_DATE - INTERVAL '1 day', 'Mejora en rango articular de hombro derecho. Test de Hawkins levemente positivo.', 'Movilizaciones pasivas + fortalecimiento de rotadores externos con theraband', 3)
-ON CONFLICT DO NOTHING;
