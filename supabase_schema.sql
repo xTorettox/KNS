@@ -1,0 +1,190 @@
+-- ==============================================================================
+-- KNS - SISTEMA DE GESTIÓN DE CONSULTORIO KINESIOLÓGICO
+-- Script SQL DDL para Supabase (PostgreSQL + Storage)
+-- ==============================================================================
+
+-- 1. Habilitar extensión para UUIDs
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+-- ==============================================================================
+-- 2. TABLA: PACIENTES
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.pacientes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre_completo VARCHAR(255) NOT NULL,
+    dni VARCHAR(30),
+    edad INTEGER CHECK (edad >= 0 AND edad <= 125),
+    telefono VARCHAR(50),
+    obra_social VARCHAR(100),
+    patologia TEXT,
+    sesiones_totales INTEGER NOT NULL DEFAULT 10 CHECK (sesiones_totales >= 0),
+    sesiones_realizadas INTEGER NOT NULL DEFAULT 0 CHECK (sesiones_realizadas >= 0),
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    notas_generales TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Índices de búsqueda para pacientes
+CREATE INDEX IF NOT EXISTS idx_pacientes_nombre ON public.pacientes (nombre_completo);
+CREATE INDEX IF NOT EXISTS idx_pacientes_dni ON public.pacientes (dni);
+CREATE INDEX IF NOT EXISTS idx_pacientes_activo ON public.pacientes (activo);
+
+-- ==============================================================================
+-- 3. TABLA: TURNOS (AGENDA DE 08:00 A 15:00 HS)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.turnos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paciente_id UUID NOT NULL REFERENCES public.pacientes(id) ON DELETE CASCADE,
+    fecha DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    duracion_minutos INTEGER NOT NULL DEFAULT 45 CHECK (duracion_minutos IN (30, 45, 60)),
+    estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Asistió', 'Cancelado', 'Reprogramado', 'Ausente')),
+    motivo_ajuste TEXT,
+    notas TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Índices para búsqueda por fecha y paciente
+CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON public.turnos (fecha);
+CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON public.turnos (paciente_id);
+CREATE INDEX IF NOT EXISTS idx_turnos_estado ON public.turnos (estado);
+
+-- ==============================================================================
+-- 4. TABLA: EVOLUCIONES CLÍNICAS (HISTORIAL MÉDICO)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.evoluciones (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paciente_id UUID NOT NULL REFERENCES public.pacientes(id) ON DELETE CASCADE,
+    turno_id UUID REFERENCES public.turnos(id) ON DELETE SET NULL,
+    fecha DATE NOT NULL DEFAULT CURRENT_DATE,
+    nota_clinica TEXT NOT NULL,
+    tratamiento_aplicado TEXT,
+    escala_dolor_eva INTEGER CHECK (escala_dolor_eva BETWEEN 0 AND 10),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_evoluciones_paciente ON public.evoluciones (paciente_id);
+CREATE INDEX IF NOT EXISTS idx_evoluciones_fecha ON public.evoluciones (fecha);
+
+-- ==============================================================================
+-- 5. TABLA: ARCHIVOS ADJUNTOS (ÓRDENES, RADIOGRAFÍAS, RESONANCIAS)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.archivos_pacientes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paciente_id UUID NOT NULL REFERENCES public.pacientes(id) ON DELETE CASCADE,
+    nombre_archivo VARCHAR(255) NOT NULL,
+    storage_path TEXT NOT NULL,
+    tipo_documento VARCHAR(100) DEFAULT 'Orden Médica',
+    tamano_bytes BIGINT,
+    public_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_archivos_paciente ON public.archivos_pacientes (paciente_id);
+
+-- ==============================================================================
+-- 6. FUNCIÓN Y TRIGGER: CONTROL AUTOMÁTICO DE SESIONES POR ASISTENCIA
+-- ==============================================================================
+CREATE OR REPLACE FUNCTION sync_paciente_sesiones()
+RETURNS TRIGGER AS $$
+DECLARE
+    target_paciente_id UUID;
+    total_asistencias INTEGER;
+BEGIN
+    IF (TG_OP = 'DELETE') THEN
+        target_paciente_id := OLD.paciente_id;
+    ELSE
+        target_paciente_id := NEW.paciente_id;
+    END IF;
+
+    -- Contar cantidad de turnos con estado 'Asistió'
+    SELECT COUNT(*) INTO total_asistencias
+    FROM public.turnos
+    WHERE paciente_id = target_paciente_id AND estado = 'Asistió';
+
+    -- Actualizar contador en la tabla pacientes
+    UPDATE public.pacientes
+    SET sesiones_realizadas = total_asistencias,
+        updated_at = NOW()
+    WHERE id = target_paciente_id;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_sync_sesiones_turnos ON public.turnos;
+CREATE TRIGGER trg_sync_sesiones_turnos
+AFTER INSERT OR UPDATE OR DELETE ON public.turnos
+FOR EACH ROW
+EXECUTE FUNCTION sync_paciente_sesiones();
+
+-- ==============================================================================
+-- 7. CONFIGURACIÓN DE STORAGE BUCKET: pacientes-adjuntos
+-- ==============================================================================
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('pacientes-adjuntos', 'pacientes-adjuntos', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Políticas de acceso para el bucket (público para lectura y subida)
+DROP POLICY IF EXISTS "Acceso publico lectura adjuntos" ON storage.objects;
+CREATE POLICY "Acceso publico lectura adjuntos"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'pacientes-adjuntos');
+
+DROP POLICY IF EXISTS "Permitir subida de adjuntos" ON storage.objects;
+CREATE POLICY "Permitir subida de adjuntos"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'pacientes-adjuntos');
+
+DROP POLICY IF EXISTS "Permitir eliminacion de adjuntos" ON storage.objects;
+CREATE POLICY "Permitir eliminacion de adjuntos"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'pacientes-adjuntos');
+
+-- ==============================================================================
+-- 8. POLÍTICAS ROW LEVEL SECURITY (RLS)
+-- ==============================================================================
+ALTER TABLE public.pacientes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.turnos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.evoluciones ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.archivos_pacientes ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para acceso total con anon/service keys
+DROP POLICY IF EXISTS "Permitir todo en pacientes" ON public.pacientes;
+CREATE POLICY "Permitir todo en pacientes" ON public.pacientes FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir todo en turnos" ON public.turnos;
+CREATE POLICY "Permitir todo en turnos" ON public.turnos FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir todo en evoluciones" ON public.evoluciones;
+CREATE POLICY "Permitir todo en evoluciones" ON public.evoluciones FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir todo en archivos_pacientes" ON public.archivos_pacientes;
+CREATE POLICY "Permitir todo en archivos_pacientes" ON public.archivos_pacientes FOR ALL USING (true) WITH CHECK (true);
+
+-- ==============================================================================
+-- 9. DATOS DE PRUEBA INICIALES (DEMOSTRACIÓN KINESIOLOGÍA)
+-- ==============================================================================
+INSERT INTO public.pacientes (id, nombre_completo, dni, edad, telefono, obra_social, patologia, sesiones_totales, sesiones_realizadas, activo, notas_generales)
+VALUES
+    ('a1111111-1111-1111-1111-111111111111', 'Carlos Menéndez', '28456123', 46, '+5491144445555', 'OSDE 210', 'Lumbalgia mecánica con irradiación a miembro inferior derecho', 10, 3, true, 'Derivado por Dr. Rossi. Trae RMN lumbar.'),
+    ('a2222222-2222-2222-2222-222222222222', 'Florencia Varela', '34123890', 32, '+5491155556666', 'Swiss Medical', 'Tendinopatía del manguito rotador derecho', 10, 5, true, 'Dolor en abducción > 90°. Deportista aficionada (crossfit).'),
+    ('a3333333-3333-3333-3333-333333333333', 'Esteban Lamponne', '25890432', 50, '+5491166667777', 'Galeno Silver', 'Esguince de tobillo grado II (LPAA)', 8, 1, true, 'Fase subaguda con edema residual. Buena respuesta al kinesiotape.')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.turnos (id, paciente_id, fecha, hora_inicio, hora_fin, duracion_minutos, estado, motivo_ajuste, notas)
+VALUES
+    ('b1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', CURRENT_DATE, '08:30:00', '09:15:00', 45, 'Pendiente', NULL, 'Magneto + ejercicios de estabilidad lumbo-pélvica'),
+    ('b2222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', CURRENT_DATE, '09:00:00', '09:45:00', 45, 'Pendiente', NULL, 'Ultrasonido + movilidad escapulotorácica'),
+    ('b3333333-3333-3333-3333-333333333333', 'a3333333-3333-3333-3333-333333333333', CURRENT_DATE, '10:00:00', '10:30:00', 30, 'Pendiente', NULL, 'Crioterapia + propiocepción en bosu')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.evoluciones (paciente_id, turno_id, fecha, nota_clinica, tratamiento_aplicado, escala_dolor_eva)
+VALUES
+    ('a1111111-1111-1111-1111-111111111111', 'b1111111-1111-1111-1111-111111111111', CURRENT_DATE - INTERVAL '2 day', 'Paciente refiere alivio del dolor irradiado tras la sesión anterior. Refiere molestia puntual al levantarse.', 'TENS 20 min + elongación de psoas e isquiotibiales + ejercicios de core', 4),
+    ('a2222222-2222-2222-2222-222222222222', 'b2222222-2222-2222-2222-222222222222', CURRENT_DATE - INTERVAL '1 day', 'Mejora en rango articular de hombro derecho. Test de Hawkins levemente positivo.', 'Movilizaciones pasivas + fortalecimiento de rotadores externos con theraband', 3)
+ON CONFLICT DO NOTHING;

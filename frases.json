@@ -1,0 +1,802 @@
+[
+  {
+    "id": 1,
+    "frase": "¡A comerlaaaaa!",
+    "autor": "Guillermo Francella",
+    "obra": "Poné a Francella",
+    "año": "1998",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 2,
+    "frase": "Hasta la vista, baby.",
+    "autor": "Arnold Schwarzenegger",
+    "obra": "Terminator 2: Judgment Day",
+    "año": "1991",
+    "categoria": "Acción Clásica"
+  },
+  {
+    "id": 3,
+    "frase": "¿Disculpe, tiene fuego?",
+    "autor": "Mario Santos",
+    "obra": "Los Simuladores",
+    "año": "2002",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 4,
+    "frase": "¡Yippee-ki-yay, hijo de p***!",
+    "autor": "Bruce Willis",
+    "obra": "Duro de Matar (Die Hard)",
+    "año": "1988",
+    "categoria": "Acción Clásica"
+  },
+  {
+    "id": 5,
+    "frase": "¡Es una nenaaaaa!",
+    "autor": "Guillermo Francella",
+    "obra": "Poné a Francella",
+    "año": "1999",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 6,
+    "frase": "I'll be back. (Volveré)",
+    "autor": "Arnold Schwarzenegger",
+    "obra": "The Terminator",
+    "año": "1984",
+    "categoria": "Acción Clásica"
+  },
+  {
+    "id": 7,
+    "frase": "No me jodas, Lamponne. ¿Qué carajo hacemos acá?",
+    "autor": "Pablo Lamponne",
+    "obra": "Los Simuladores",
+    "año": "2002",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 8,
+    "frase": "Say hello to my little friend!",
+    "autor": "Al Pacino",
+    "obra": "Scarface",
+    "año": "1983",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 9,
+    "frase": "¡Si no me tienen fe!",
+    "autor": "Alberto Olmedo",
+    "obra": "No toca botón",
+    "año": "1987",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 10,
+    "frase": "Get to the chopper!",
+    "autor": "Arnold Schwarzenegger",
+    "obra": "Depredador (Predator)",
+    "año": "1987",
+    "categoria": "Acción Clásica"
+  },
+  {
+    "id": 11,
+    "frase": "¡Hermosa mañana, verdad?",
+    "autor": "Guillermo Francella",
+    "obra": "Extermineitors IV / Frase Célebre",
+    "año": "1992",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 12,
+    "frase": "No siento las piernas, Dios mío... ¡no siento las piernas!",
+    "autor": "Sylvester Stallone",
+    "obra": "Rambo: First Blood",
+    "año": "1982",
+    "categoria": "Acción Clásica"
+  },
+  {
+    "id": 13,
+    "frase": "¿Saben cuál es el problema? Que no hay remate.",
+    "autor": "Emilio Medina",
+    "obra": "Los Simuladores",
+    "año": "2002",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 14,
+    "frase": "Great Scott! (¡Santo cielo!)",
+    "autor": "Dr. Emmett Brown (Christopher Lloyd)",
+    "obra": "Volver al Futuro (Back to the Future)",
+    "año": "1985",
+    "categoria": "Ciencia Ficción 80s"
+  },
+  {
+    "id": 15,
+    "frase": "¡De acá! ¡Mirá de quién te burlaste!",
+    "autor": "Alberto Olmedo",
+    "obra": "El Manosanta",
+    "año": "1986",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 16,
+    "frase": "Billetera mata galán.",
+    "autor": "Jacobo Winograd",
+    "obra": "Televisión de los 90s",
+    "año": "1996",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 17,
+    "frase": "Sssssmokin'!",
+    "autor": "Jim Carrey",
+    "obra": "La Máscara (The Mask)",
+    "año": "1994",
+    "categoria": "Comedia 90s"
+  },
+  {
+    "id": 18,
+    "frase": "¡Adrogué, tierra de valientes y de campeones!",
+    "autor": "Gabriel Medina",
+    "obra": "Los Simuladores",
+    "año": "2003",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 19,
+    "frase": "English, motherf***er, do you speak it?",
+    "autor": "Samuel L. Jackson",
+    "obra": "Pulp Fiction",
+    "año": "1994",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 20,
+    "frase": "¡Yo no soy un número, soy un hombre libre!",
+    "autor": "Jorge Porcel",
+    "obra": "Las Gatitas y Ratones de Porcel",
+    "año": "1988",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 21,
+    "frase": "Show me the money!",
+    "autor": "Tom Cruise / Cuba Gooding Jr.",
+    "obra": "Jerry Maguire",
+    "año": "1996",
+    "categoria": "Cine 90s"
+  },
+  {
+    "id": 22,
+    "frase": "¿Qué te pasa, Clarín? ¿Estás nervioso?",
+    "autor": "Néstor Kirchner / Parodia TV 90s",
+    "obra": "Cultura Popular",
+    "año": "1999",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 23,
+    "frase": "¡Pico y pala, pico y pala!",
+    "autor": "Pepe Argento",
+    "obra": "Casados con Hijos",
+    "año": "2001",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 24,
+    "frase": "Life is like a box of chocolates. You never know what you're gonna get.",
+    "autor": "Tom Hanks",
+    "obra": "Forrest Gump",
+    "año": "1994",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 25,
+    "frase": "¡Seguime, no te voy a defraudar!",
+    "autor": "Carlos Menem",
+    "obra": "Campaña Presidencial",
+    "año": "1989",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 26,
+    "frase": "Houston, we have a problem.",
+    "autor": "Tom Hanks",
+    "obra": "Apollo 13",
+    "año": "1995",
+    "categoria": "Cine 90s"
+  },
+  {
+    "id": 27,
+    "frase": "¿Usted es el famoso Franco Milazzo?",
+    "autor": "Mario Santos",
+    "obra": "Los Simuladores",
+    "año": "2002",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 28,
+    "frase": "Wax on, wax off.",
+    "autor": "Sr. Miyagi (Pat Morita)",
+    "obra": "Karate Kid",
+    "año": "1984",
+    "categoria": "Cine 80s"
+  },
+  {
+    "id": 29,
+    "frase": "Si querés llorar, ¡llorá!",
+    "autor": "Moria Casán",
+    "obra": "Moria Banana / Talk Shows",
+    "año": "1995",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 30,
+    "frase": "You can't handle the truth!",
+    "autor": "Jack Nicholson",
+    "obra": "A Few Good Men (Cuestión de Honor)",
+    "año": "1992",
+    "categoria": "Cine 90s"
+  },
+  {
+    "id": 31,
+    "frase": "¡Vermouth con papas fritas y... good show!",
+    "autor": "Tato Bores",
+    "obra": "Tato de América",
+    "año": "1991",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 32,
+    "frase": "You talking to me?",
+    "autor": "Robert De Niro",
+    "obra": "Taxi Driver (Cine de Leyenda)",
+    "año": "1980",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 33,
+    "frase": "No hay nada más peligroso que un boludo con iniciativa.",
+    "autor": "Pepe Soriano / Cultura Argentina",
+    "obra": "La Patagonia Rebelde / Frase Popular",
+    "año": "1985",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 34,
+    "frase": "I feel the need... the need for speed!",
+    "autor": "Tom Cruise",
+    "obra": "Top Gun",
+    "año": "1986",
+    "categoria": "Acción 80s"
+  },
+  {
+    "id": 35,
+    "frase": "¡Ay, Dios mío, por qué me hiciste tan hermosa y tan inteligente!",
+    "autor": "Susana Giménez",
+    "obra": "Hola Susana",
+    "año": "1993",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 36,
+    "frase": "Here's Johnny!",
+    "autor": "Jack Nicholson",
+    "obra": "El Resplandor (The Shining)",
+    "año": "1980",
+    "categoria": "Cine de Terror 80s"
+  },
+  {
+    "id": 37,
+    "frase": "¡Un corte, una quebrada y volvemos!",
+    "autor": "Silvio Soldán",
+    "obra": "Feliz Domingo para la Juventud",
+    "año": "1988",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 38,
+    "frase": "Roads? Where we're going, we don't need roads.",
+    "autor": "Doc Brown",
+    "obra": "Volver al Futuro",
+    "año": "1985",
+    "categoria": "Ciencia Ficción 80s"
+  },
+  {
+    "id": 39,
+    "frase": "¡La pelota no se mancha!",
+    "autor": "Diego Armando Maradona",
+    "obra": "Despedida en La Bombonera",
+    "año": "2001",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 40,
+    "frase": "Keep your friends close, but your enemies closer.",
+    "autor": "Al Pacino",
+    "obra": "El Padrino",
+    "año": "1985",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 41,
+    "frase": "¡Qué hacés, papá! ¿Todo tranqui?",
+    "autor": "Guillermo Francella",
+    "obra": "Los Extermineitors",
+    "año": "1989",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 42,
+    "frase": "Alrighty then!",
+    "autor": "Jim Carrey",
+    "obra": "Ace Ventura: Pet Detective",
+    "año": "1994",
+    "categoria": "Comedia 90s"
+  },
+  {
+    "id": 43,
+    "frase": "El secreto de este juego es no apurarse.",
+    "autor": "Ricardo Darín",
+    "obra": "Nueve Reinas",
+    "año": "2000",
+    "categoria": "Cine Argentino"
+  },
+  {
+    "id": 44,
+    "frase": "I see dead people.",
+    "autor": "Haley Joel Osment / Bruce Willis",
+    "obra": "Sexto Sentido (The Sixth Sense)",
+    "año": "1999",
+    "categoria": "Cine 90s"
+  },
+  {
+    "id": 45,
+    "frase": "¡Qué noche, Teté!",
+    "autor": "Roberto Giordano",
+    "obra": "Desfiles de Punta del Este",
+    "año": "1994",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 46,
+    "frase": "There is no spoon. (No hay cuchara)",
+    "autor": "Keanu Reeves",
+    "obra": "Matrix (The Matrix)",
+    "año": "1999",
+    "categoria": "Ciencia Ficción 90s"
+  },
+  {
+    "id": 47,
+    "frase": "¡Moni, pasame la pomada para la ciática que no me puedo mover!",
+    "autor": "Pepe Argento",
+    "obra": "Casados con Hijos",
+    "año": "2001",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 48,
+    "frase": "Go ahead, make my day.",
+    "autor": "Clint Eastwood",
+    "obra": "Impacto Súbito (Sudden Impact)",
+    "año": "1983",
+    "categoria": "Acción Clásica"
+  },
+  {
+    "id": 49,
+    "frase": "¡No va a andar! ¡Esto no va a andar!",
+    "autor": "Guillermo Francella",
+    "obra": "De Carne Somos",
+    "año": "1988",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 50,
+    "frase": "Why so serious?",
+    "autor": "El Guasón",
+    "obra": "Cómics & Cine Clásico",
+    "año": "1989",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 51,
+    "frase": "Usted no puede decir semejante barbaridad.",
+    "autor": "Mauro Viale",
+    "obra": "Mediodía con Mauro (Pelea Samid)",
+    "año": "1999",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 52,
+    "frase": "May the Force be with you.",
+    "autor": "Harrison Ford / Mark Hamill",
+    "obra": "Star Wars: Return of the Jedi",
+    "año": "1983",
+    "categoria": "Ciencia Ficción 80s"
+  },
+  {
+    "id": 53,
+    "frase": "¡Usted se tiene que arrepentir de lo que dijo!",
+    "autor": "Alberto Samid",
+    "obra": "Mediodía con Mauro",
+    "año": "1999",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 54,
+    "frase": "I'm the king of the world!",
+    "autor": "Leonardo DiCaprio",
+    "obra": "Titanic",
+    "año": "1997",
+    "categoria": "Cine 90s"
+  },
+  {
+    "id": 55,
+    "frase": "¡Es un escándalo, señores, un escándalo!",
+    "autor": "Lucho Avilés",
+    "obra": "Indiscreciones",
+    "año": "1992",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 56,
+    "frase": "You had me at hello.",
+    "autor": "Renée Zellweger",
+    "obra": "Jerry Maguire",
+    "año": "1996",
+    "categoria": "Cine 90s"
+  },
+  {
+    "id": 57,
+    "frase": "¿Qué hacés, tripero?",
+    "autor": "Emilio Disi",
+    "obra": "Bañeros II: La Playa Loca",
+    "año": "1989",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 58,
+    "frase": "I'm going to make him an offer he can't refuse.",
+    "autor": "Marlon Brando",
+    "obra": "El Padrino",
+    "año": "1982",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 59,
+    "frase": "¡No te mueras nunca, kinesiólogo de mi corazón!",
+    "autor": "Cultura Popular Argentina",
+    "obra": "Tribuna de Fútbol 90s",
+    "año": "1995",
+    "categoria": "Humor Clínico"
+  },
+  {
+    "id": 60,
+    "frase": "I love the smell of napalm in the morning.",
+    "autor": "Robert Duvall",
+    "obra": "Apocalypse Now",
+    "año": "1980",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 61,
+    "frase": "¿Y si te llama Román?",
+    "autor": "Sebastián Vignolo / Clásicos TV",
+    "obra": "Fútbol de los 90s/2000s",
+    "año": "2000",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 62,
+    "frase": "Welcome to the real world.",
+    "autor": "Laurence Fishburne (Morpheus)",
+    "obra": "Matrix",
+    "año": "1999",
+    "categoria": "Ciencia Ficción 90s"
+  },
+  {
+    "id": 63,
+    "frase": "¡Coqui, traéme los puchos o te tiro la chancleta!",
+    "autor": "Pepe Argento",
+    "obra": "Casados con Hijos",
+    "año": "2001",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 64,
+    "frase": "Elementary, my dear Watson.",
+    "autor": "Sherlock Holmes",
+    "obra": "Cine Clásico",
+    "año": "1985",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 65,
+    "frase": "¡Qué pedazo de laburo te mandaste, Santos!",
+    "autor": "Emilio Medina",
+    "obra": "Los Simuladores",
+    "año": "2002",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 66,
+    "frase": "To infinity and beyond! (¡Al infinito y más allá!)",
+    "autor": "Buzz Lightyear (Tim Allen)",
+    "obra": "Toy Story",
+    "año": "1995",
+    "categoria": "Animación 90s"
+  },
+  {
+    "id": 67,
+    "frase": "¡Movete, che, movete! ¡No estamos en un spa!",
+    "autor": "Emilio Disi",
+    "obra": "Los Bañeros más Locos del Mundo",
+    "año": "1987",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 68,
+    "frase": "Show me the money and fix my lower back!",
+    "autor": "Parodia Kinesiológica 90s",
+    "obra": "KNS Classic Humour",
+    "año": "1997",
+    "categoria": "Humor Clínico"
+  },
+  {
+    "id": 69,
+    "frase": "¡Me cortaron las piernas!",
+    "autor": "Diego Armando Maradona",
+    "obra": "Mundial USA 94",
+    "año": "1994",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 70,
+    "frase": "You shall not pass!",
+    "autor": "Gandalf (Ian McKellen)",
+    "obra": "Fantasía Épica",
+    "año": "2001",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 71,
+    "frase": "¡Hay que poner los fideos que se nos pasa el agua!",
+    "autor": "Jorge Porcel",
+    "obra": "Teatro de Revista 80s",
+    "año": "1985",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 72,
+    "frase": "I'll make him an offer that his lumbar spine can't refuse.",
+    "autor": "Licenciado en Kinesiología",
+    "obra": "KNS Quotes",
+    "año": "1999",
+    "categoria": "Humor Clínico"
+  },
+  {
+    "id": 73,
+    "frase": "¡Pero qué bárbaro, cómo me duele el manguito rotador!",
+    "autor": "Guillermo Francella",
+    "obra": "Casados con Hijos",
+    "año": "2001",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 74,
+    "frase": "You're gonna need a bigger boat.",
+    "autor": "Roy Scheider",
+    "obra": "Tiburón (Jaws)",
+    "año": "1980",
+    "categoria": "Cine Clásico"
+  },
+  {
+    "id": 75,
+    "frase": "¡No me peguen, soy Giordano!",
+    "autor": "Roberto Giordano",
+    "obra": "Desfile de Moda 90s",
+    "año": "1998",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 76,
+    "frase": "My precious... (Mi tesoro...)",
+    "autor": "Gollum",
+    "obra": "Fantasía Épica",
+    "año": "2001",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 77,
+    "frase": "¡Lamponne, el pedido de la camilla térmica es urgente!",
+    "autor": "Mario Santos",
+    "obra": "Los Simuladores (Versión Médica)",
+    "año": "2002",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 78,
+    "frase": "Hasta la vista, contractura.",
+    "autor": "Arnold Kinesiologist",
+    "obra": "KNS Special",
+    "año": "1991",
+    "categoria": "Humor Clínico"
+  },
+  {
+    "id": 79,
+    "frase": "¡La tenés adentro!",
+    "autor": "Diego Armando Maradona",
+    "obra": "Conferencia de Prensa Clásica",
+    "año": "2009",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 80,
+    "frase": "I am Iron Man.",
+    "autor": "Robert Downey Jr. / Ozzy Osbourne 80s",
+    "obra": "Heavy Metal & Pop Culture",
+    "año": "1989",
+    "categoria": "Cine & Música"
+  },
+  {
+    "id": 81,
+    "frase": "¿Cuántas sesiones le quedan a este muchacho?",
+    "autor": "Pepe Argento",
+    "obra": "Casados con Hijos",
+    "año": "2001",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 82,
+    "frase": "Keep the change, ya filthy animal!",
+    "autor": "Gangster Johnny",
+    "obra": "Mi Pobre Angelito (Home Alone)",
+    "año": "1990",
+    "categoria": "Comedia 90s"
+  },
+  {
+    "id": 83,
+    "frase": "¡Esto es una fiesta inolvidable!",
+    "autor": "Pancho Dotto",
+    "obra": "Verano 90s en Punta",
+    "año": "1996",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 84,
+    "frase": "You're tearing me apart, Lisa!",
+    "autor": "Tommy Wiseau",
+    "obra": "Cine Bizarro de Culto",
+    "año": "2003",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 85,
+    "frase": "¡Cuidado con la magnetoterapia que te quedás pegado!",
+    "autor": "Emilio Disi",
+    "obra": "Los Extermineitors 2",
+    "año": "1990",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 86,
+    "frase": "If it bleeds, we can kill it.",
+    "autor": "Arnold Schwarzenegger",
+    "obra": "Depredador",
+    "año": "1987",
+    "categoria": "Acción 80s"
+  },
+  {
+    "id": 87,
+    "frase": "¿Y el mate? ¿Quién preparó este mate tan lavado?",
+    "autor": "Ricardo Darín",
+    "obra": "El Mismo Amor, la Misma Lluvia",
+    "año": "1999",
+    "categoria": "Cine Argentino"
+  },
+  {
+    "id": 88,
+    "frase": "Hakuna Matata.",
+    "autor": "Timón y Pumba",
+    "obra": "El Rey León",
+    "año": "1994",
+    "categoria": "Animación 90s"
+  },
+  {
+    "id": 89,
+    "frase": "¡Tranquilo, viejo, todo tiene solución menos la muerte!",
+    "autor": "Guillermo Francella",
+    "obra": "La Familia Benvenuto",
+    "año": "1991",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 90,
+    "frase": "I'm ready to kick ass and chew bubblegum... and I'm all out of gum.",
+    "autor": "Roddy Piper",
+    "obra": "They Live (Están Vivos)",
+    "año": "1988",
+    "categoria": "Acción Clásica"
+  },
+  {
+    "id": 91,
+    "frase": "¡Mire que le dije que no hiciera fuerza con la cintura!",
+    "autor": "Kinesiólogo Amigo",
+    "obra": "KNS Consultorio",
+    "año": "1995",
+    "categoria": "Humor Clínico"
+  },
+  {
+    "id": 92,
+    "frase": "There's no place like home.",
+    "autor": "Judy Garland / Cultura 80s",
+    "obra": "Cine Clásico",
+    "año": "1985",
+    "categoria": "Cine de Culto"
+  },
+  {
+    "id": 93,
+    "frase": "¡Al gran pueblo argentino, salud y buena postura!",
+    "autor": "Tato Bores",
+    "obra": "Tato de América",
+    "año": "1992",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 94,
+    "frase": "I find your lack of faith disturbing.",
+    "autor": "Darth Vader",
+    "obra": "Star Wars",
+    "año": "1983",
+    "categoria": "Ciencia Ficción 80s"
+  },
+  {
+    "id": 95,
+    "frase": "¡Vamos, vamos, que el kinesiotape hace milagros!",
+    "autor": "Franco Milazzo",
+    "obra": "Los Simuladores (Edición Especial)",
+    "año": "2003",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 96,
+    "frase": "Hasta la victoria de la rehabilitación siempre.",
+    "autor": "KNS Team",
+    "obra": "KNS Filosofía",
+    "año": "1999",
+    "categoria": "Humor Clínico"
+  },
+  {
+    "id": 97,
+    "frase": "¡Por el poder de Grayskull! ¡Yo tengo el poder!",
+    "autor": "He-Man",
+    "obra": "He-Man and the Masters of the Universe",
+    "año": "1983",
+    "categoria": "Animación 80s"
+  },
+  {
+    "id": 98,
+    "frase": "¡Esto es una pinturita, quedó 10 puntos!",
+    "autor": "Guillermo Francella",
+    "obra": "Brigada Cola",
+    "año": "1992",
+    "categoria": "Cultura Pop Argentina"
+  },
+  {
+    "id": 99,
+    "frase": "No pain, no gain. (Sin dolor no hay gloria)",
+    "autor": "Arnold Schwarzenegger",
+    "obra": "Pumping Iron",
+    "año": "1980",
+    "categoria": "Fitness Clásico"
+  },
+  {
+    "id": 100,
+    "frase": "¡Misión cumplida, Santos! El paciente ya puede bailar tango.",
+    "autor": "Mario Santos / Ravenna",
+    "obra": "Los Simuladores",
+    "año": "2002",
+    "categoria": "Cultura Pop Argentina"
+  }
+]
