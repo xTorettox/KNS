@@ -1,6 +1,6 @@
 """
 Módulo de componentes visuales, estilos CSS modernos e interfaz de usuario en Streamlit.
-Provee una estética cuidada, profesional y agradable con badges, cards e indicadores.
+Provee una estética cuidada, profesional y agradable con badges, cards, grillas e indicadores.
 """
 import streamlit as st
 from typing import Optional, Dict, Any
@@ -21,7 +21,7 @@ def inject_custom_css():
 
     /* Contenedor principal con espaciado óptimo */
     .block-container {
-        padding-top: 1.5rem;
+        padding-top: 1.2rem;
         padding-bottom: 3rem;
         max-width: 1200px;
     }
@@ -32,7 +32,7 @@ def inject_custom_css():
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 14px;
         padding: 1.25rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.8rem;
         box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.25);
         transition: transform 0.2s ease, border-color 0.2s ease;
     }
@@ -197,10 +197,28 @@ def inject_custom_css():
         text-decoration: none;
     }
 
-    /* Calendario 7 Columnas Table Grid (Inmune a colapsos móviles) */
+    /* Barra de progreso de sesiones */
+    .session-bar-container {
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        height: 10px;
+        width: 100%;
+        overflow: hidden;
+        margin-top: 6px;
+    }
+
+    .session-bar-fill {
+        height: 100%;
+        border-radius: 8px;
+        transition: width 0.3s ease;
+    }
+
+    /* ========================================================================= */
+    /* CALENDARIO 7 COLUMNAS (TABLA PURA INQUEBRANTABLE EN MÓVILES) */
+    /* ========================================================================= */
     .kns-cal-container {
         width: 100%;
-        margin-bottom: 1rem;
+        margin-bottom: 0.8rem;
     }
 
     .kns-month-bar {
@@ -211,33 +229,14 @@ def inject_custom_css():
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
         padding: 8px 12px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     .kns-month-title {
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         font-weight: 800;
         color: #38bdf8;
         text-align: center;
-    }
-
-    .kns-month-nav-btn {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(255, 255, 255, 0.08);
-        color: #f8fafc !important;
-        text-decoration: none !important;
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-weight: 700;
-        font-size: 0.85rem;
-        transition: background 0.15s ease;
-    }
-
-    .kns-month-nav-btn:hover {
-        background: #0284c7;
-        color: #ffffff !important;
     }
 
     .kns-cal-table {
@@ -245,15 +244,15 @@ def inject_custom_css():
         border-collapse: separate;
         border-spacing: 4px;
         table-layout: fixed;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
 
     .kns-cal-table th {
         text-align: center;
         font-weight: 800;
-        font-size: 0.78rem;
+        font-size: 0.75rem;
         color: #94a3b8;
-        padding: 4px 0;
+        padding: 3px 0;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
@@ -271,7 +270,7 @@ def inject_custom_css():
         align-items: center;
         justify-content: center;
         width: 100%;
-        min-height: 52px;
+        min-height: 50px;
         border-radius: 8px;
         background: #1e293b;
         border: 1px solid rgba(255, 255, 255, 0.08);
@@ -296,14 +295,14 @@ def inject_custom_css():
     .kns-cal-cell.selected {
         background: #0284c7 !important;
         border: 2px solid #38bdf8 !important;
-        box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+        box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
     }
 
     .kns-cal-cell.empty {
         background: rgba(15, 23, 42, 0.2);
         border: 1px dashed rgba(255, 255, 255, 0.03);
         pointer-events: none;
-        min-height: 52px;
+        min-height: 50px;
     }
 
     .kns-day-num {
@@ -338,96 +337,12 @@ def inject_custom_css():
         background: rgba(250, 204, 21, 0.18);
     }
 
-    /* Contenedor del calendario mensual */
-    .cal-grid-header {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
-        text-align: center;
-        font-weight: 700;
-        font-size: 0.82rem;
-        color: #94a3b8;
-        margin-bottom: 6px;
-    }
-
-    .cal-day-cell {
-        background: #1e293b;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        padding: 8px 4px;
-        text-align: center;
-        min-height: 68px;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: center;
-        transition: all 0.2s ease;
-    }
-
-    .cal-day-cell.today {
-        border: 2px solid #38bdf8;
-        background: rgba(56, 189, 248, 0.08);
-    }
-
-    .cal-day-cell.selected {
-        border: 2px solid #4ade80;
-        background: rgba(74, 222, 128, 0.1);
-    }
-
-    .cal-day-num {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: #f8fafc;
-    }
-
-    .cal-day-badge {
-        font-size: 0.7rem;
-        font-weight: 700;
-        padding: 2px 5px;
-        border-radius: 4px;
-        margin-top: 2px;
-        display: inline-block;
-        white-space: nowrap;
-    }
-
-    /* Contenedor y tarjetas de la Grilla Semanal */
-    .week-grid-container {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-        margin-bottom: 12px;
-    }
-
-    .week-day-card {
-        background: #1e293b;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 10px;
-        padding: 10px 6px;
-        text-align: center;
-        transition: transform 0.15s ease, border-color 0.15s ease;
-    }
-
-    .week-day-card:hover {
-        border-color: #38bdf8;
-        transform: translateY(-2px);
-    }
-
-    .week-day-card.today {
-        border: 2px solid #38bdf8;
-        background: rgba(56, 189, 248, 0.1);
-    }
-
-    .week-day-card.selected {
-        border: 2px solid #4ade80;
-        background: rgba(74, 222, 128, 0.12);
-    }
-
     /* Mobile specific tweaks */
     @media (max-width: 768px) {
         .block-container {
             padding-top: 0.8rem !important;
-            padding-left: 0.7rem !important;
-            padding-right: 0.7rem !important;
+            padding-left: 0.6rem !important;
+            padding-right: 0.6rem !important;
             padding-bottom: 2rem !important;
         }
         .kpi-card {
@@ -437,19 +352,20 @@ def inject_custom_css():
         .kpi-value {
             font-size: 1.45rem !important;
         }
-        .cal-day-cell {
-            min-height: 52px !important;
-            padding: 4px 1px !important;
+        .kns-cal-table {
+            border-spacing: 2px !important;
         }
-        .cal-day-num {
+        .kns-cal-cell {
+            min-height: 44px !important;
+            padding: 2px 0 !important;
+            border-radius: 6px !important;
+        }
+        .kns-day-num {
             font-size: 0.82rem !important;
         }
-        .cal-day-badge {
-            font-size: 0.62rem !important;
-            padding: 1px 2px !important;
-        }
-        .week-grid-container {
-            grid-template-columns: repeat(4, 1fr) !important;
+        .kns-day-badge {
+            font-size: 0.58rem !important;
+            padding: 0 2px !important;
         }
     }
     </style>
@@ -473,11 +389,11 @@ def inject_custom_css():
 
 def render_header(title: str, subtitle: Optional[str] = None, icon: str = "🩺"):
     """Renderiza un encabezado limpio y moderno para cada vista."""
-    sub_html = f"<p style='color: #94a3b8; margin: 0; font-size: 0.95rem;'>{subtitle}</p>" if subtitle else ""
+    sub_html = f"<p style='color: #94a3b8; margin: 0; font-size: 0.92rem;'>{subtitle}</p>" if subtitle else ""
     st.markdown(
         f"""
-        <div style="margin-bottom: 1.5rem;">
-            <h2 style="margin: 0; color: #f8fafc; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+        <div style="margin-bottom: 1.2rem;">
+            <h2 style="margin: 0; color: #f8fafc; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; font-size: 1.6rem;">
                 <span>{icon}</span> <span>{title}</span>
             </h2>
             {sub_html}
@@ -522,13 +438,13 @@ def render_session_progress(sesiones_realizadas: int, sesiones_totales: int) -> 
     
     # Color según avance
     if porcentaje >= 100:
-        bar_color = "#ef4444" # Agotado / Alerta
+        bar_color = "#ef4444"
         status_txt = "¡Sesiones Completadas! Solicitar nueva orden."
     elif porcentaje >= 80:
-        bar_color = "#f59e0b" # Por finalizar
+        bar_color = "#f59e0b"
         status_txt = f"{restantes} restante(s) - Próximo a finalizar"
     else:
-        bar_color = "#10b981" # Normal
+        bar_color = "#10b981"
         status_txt = f"{restantes} restante(s) disponibles"
 
     return f"""
@@ -571,4 +487,3 @@ def render_daily_quote_box(quote_data: Dict[str, Any]):
 def render_google_calendar_button(gcal_url: str, label: str = "📅 Google Calendar") -> str:
     """Devuelve el fragmento HTML estilizado para el botón de Google Calendar."""
     return f'<a href="{gcal_url}" target="_blank" class="btn-gcal" title="Agregar a Google Calendar">{label}</a>'
-

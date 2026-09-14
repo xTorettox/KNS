@@ -53,34 +53,14 @@ DIAS_COMPLETOS_ES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sáb
 # GENERADORES DE HTML PARA GRILLAS DE CALENDARIO 7 COLUMNAS (NO COLAPSAN EN MÓVIL)
 # ==============================================================================
 
-def generate_month_calendar_html(year: int, month: int, selected_date: date, turnos_por_dia: Dict[int, List[Dict[str, Any]]]) -> str:
-    """Genera la tabla HTML de 7 columnas del mes completo que no se rompe en pantallas móviles."""
+def generate_month_calendar_html(year: int, month: int, selected_date: date, turnos_por_dia: Dict[int, List[Dict[str, Any]]], session_token: str = "") -> str:
+    """Genera la tabla HTML de 7 columnas del mes completo sin sangría Markdown para evitar bloques de código."""
     month_matrix = calendar.monthcalendar(year, month)
     today = date.today()
-    
-    if month == 1:
-        prev_m, prev_y = 12, year - 1
-    else:
-        prev_m, prev_y = month - 1, year
-        
-    if month == 12:
-        next_m, next_y = 1, year + 1
-    else:
-        next_m, next_y = month + 1, year
+    token_param = f"&session_token={session_token}" if session_token else ""
 
     html = []
     html.append('<div class="kns-cal-container">')
-    
-    # Barra superior de navegación de mes
-    html.append(f'''
-    <div class="kns-month-bar">
-        <a href="?page=agenda&cal_month={prev_m}&cal_year={prev_y}&view_mode=month" target="_self" class="kns-month-nav-btn">◀ Anterior</a>
-        <div class="kns-month-title">🗓️ {MESES_ES[month]} {year}</div>
-        <a href="?page=agenda&cal_month={next_m}&cal_year={next_y}&view_mode=month" target="_self" class="kns-month-nav-btn">Siguiente ▶</a>
-    </div>
-    ''')
-    
-    # Tabla 7 columnas
     html.append('<table class="kns-cal-table">')
     html.append('<thead><tr>')
     for d_name in DIAS_ES:
@@ -116,43 +96,30 @@ def generate_month_calendar_html(year: int, month: int, selected_date: date, tur
                     
                 cls_str = " ".join(classes)
                 d_iso = d_date.isoformat()
-                
                 star_txt = "★ " if is_today else ""
                 
-                html.append(f'''
-                <td>
-                    <a href="?page=agenda&cal_date={d_iso}&cal_month={month}&cal_year={year}&view_mode=month" target="_self" class="{cls_str}">
-                        <div class="kns-day-num">{star_txt}{day_num}</div>
-                        {badge_html}
-                    </a>
-                </td>
-                ''')
+                cell_html = (
+                    f'<td>'
+                    f'<a href="?page=agenda&cal_date={d_iso}&cal_month={month}&cal_year={year}&view_mode=month{token_param}" target="_self" class="{cls_str}">'
+                    f'<div class="kns-day-num">{star_txt}{day_num}</div>'
+                    f'{badge_html}'
+                    f'</a>'
+                    f'</td>'
+                )
+                html.append(cell_html)
         html.append('</tr>')
         
     html.append('</tbody></table>')
     html.append('</div>')
     return "".join(html)
 
-def generate_week_calendar_html(start_of_week: date, selected_date: date, turnos_semana_map: Dict[str, List[Dict[str, Any]]]) -> str:
+def generate_week_calendar_html(start_of_week: date, selected_date: date, turnos_semana_map: Dict[str, List[Dict[str, Any]]], session_token: str = "") -> str:
     """Genera la tabla HTML de 7 columnas de la semana actual."""
-    end_of_week = start_of_week + timedelta(days=6)
     today = date.today()
-    
-    prev_week_date = start_of_week - timedelta(days=7)
-    next_week_date = start_of_week + timedelta(days=7)
+    token_param = f"&session_token={session_token}" if session_token else ""
     
     html = []
     html.append('<div class="kns-cal-container">')
-    
-    # Barra de navegación semanal
-    html.append(f'''
-    <div class="kns-month-bar">
-        <a href="?page=agenda&cal_date={prev_week_date.isoformat()}&view_mode=week" target="_self" class="kns-month-nav-btn">◀ Semana Ant.</a>
-        <div class="kns-month-title">Semana del {start_of_week.strftime('%d/%m')} al {end_of_week.strftime('%d/%m')}</div>
-        <a href="?page=agenda&cal_date={next_week_date.isoformat()}&view_mode=week" target="_self" class="kns-month-nav-btn">Semana Sig. ▶</a>
-    </div>
-    ''')
-    
     html.append('<table class="kns-cal-table">')
     html.append('<thead><tr>')
     for d_name in DIAS_ES:
@@ -185,14 +152,15 @@ def generate_week_calendar_html(start_of_week: date, selected_date: date, turnos
         cls_str = " ".join(classes)
         star_txt = "★ " if is_today else ""
         
-        html.append(f'''
-        <td>
-            <a href="?page=agenda&cal_date={d_iso}&view_mode=week" target="_self" class="{cls_str}">
-                <div class="kns-day-num">{star_txt}{d_curr.day}</div>
-                {badge_html}
-            </a>
-        </td>
-        ''')
+        cell_html = (
+            f'<td>'
+            f'<a href="?page=agenda&cal_date={d_iso}&view_mode=week{token_param}" target="_self" class="{cls_str}">'
+            f'<div class="kns-day-num">{star_txt}{d_curr.day}</div>'
+            f'{badge_html}'
+            f'</a>'
+            f'</td>'
+        )
+        html.append(cell_html)
         
     html.append('</tr></tbody></table>')
     html.append('</div>')
@@ -505,12 +473,41 @@ def render_agenda_view():
 
     st.markdown("---")
 
+    session_token = st.query_params.get("session_token", "")
+
     # ==============================================================================
     # MODO 1: 🗓️ GRILLA MENSUAL (TABLA 7 COLUMNAS INQUEBRANTABLE + INSPECTOR)
     # ==============================================================================
     if selected_mode == "🗓️ Grilla Mensual":
         cal_y = st.session_state.cal_year
         cal_m = st.session_state.cal_month
+
+        # Navegación del Mes con Botones Nativos de Streamlit (Sin recarga de navegador ni pérdida de sesión)
+        col_m_prev, col_m_title, col_m_next = st.columns([1, 2.2, 1])
+        
+        with col_m_prev:
+            if st.button("◀ Anterior", use_container_width=True, key="btn_native_m_prev"):
+                if cal_m == 1:
+                    st.session_state.cal_month = 12
+                    st.session_state.cal_year -= 1
+                else:
+                    st.session_state.cal_month -= 1
+                st.rerun()
+
+        with col_m_title:
+            st.markdown(
+                f"<h3 style='text-align: center; margin: 4px 0; color: #38bdf8; font-size: 1.25rem; font-weight: 800;'>🗓️ {MESES_ES[cal_m]} {cal_y}</h3>",
+                unsafe_allow_html=True
+            )
+
+        with col_m_next:
+            if st.button("Siguiente ▶", use_container_width=True, key="btn_native_m_next"):
+                if cal_m == 12:
+                    st.session_state.cal_month = 1
+                    st.session_state.cal_year += 1
+                else:
+                    st.session_state.cal_month += 1
+                st.rerun()
 
         num_days_in_month = calendar.monthrange(cal_y, cal_m)[1]
         start_month_date = date(cal_y, cal_m, 1)
@@ -528,14 +525,14 @@ def render_agenda_view():
             except Exception:
                 pass
 
-        # Renderizar Grilla HTML 7 columnas
-        grid_html = generate_month_calendar_html(cal_y, cal_m, st.session_state.agenda_date, turnos_por_dia)
-        st.markdown(grid_html, unsafe_allow_html=True)
+        # Renderizar Grilla HTML 7 columnas sin espacios indentados
+        grid_html = generate_month_calendar_html(cal_y, cal_m, st.session_state.agenda_date, turnos_por_dia, session_token=session_token)
+        st.html(grid_html)
 
-        # Botón para volver a hoy o seleccionar fecha puntual
+        # Controles rápidos de fecha
         col_ctrl1, col_ctrl2 = st.columns([1.5, 2])
         with col_ctrl1:
-            if st.button("⭐ Ir al Día de Hoy", use_container_width=True, type="secondary"):
+            if st.button("⭐ Ir a Hoy", use_container_width=True, type="secondary"):
                 st.session_state.agenda_date = date.today()
                 st.session_state.cal_month = date.today().month
                 st.session_state.cal_year = date.today().year
@@ -549,7 +546,7 @@ def render_agenda_view():
                 st.rerun()
 
         # Detalle del día seleccionado
-        st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 0.8rem;'></div>", unsafe_allow_html=True)
         render_day_turnos_detail(st.session_state.agenda_date, clinic_name=clinic_name, show_title=True)
         return
 
@@ -561,28 +558,54 @@ def render_agenda_view():
         start_of_week = current_date - timedelta(days=current_date.weekday())
         end_of_week = start_of_week + timedelta(days=6)
         
+        col_w_prev, col_w_title, col_w_next = st.columns([1, 2.2, 1])
+        
+        with col_w_prev:
+            if st.button("◀ Semana Ant.", use_container_width=True, key="btn_native_w_prev"):
+                st.session_state.agenda_date -= timedelta(days=7)
+                st.session_state.cal_month = st.session_state.agenda_date.month
+                st.session_state.cal_year = st.session_state.agenda_date.year
+                st.rerun()
+
+        with col_w_title:
+            st.markdown(
+                f"<h4 style='text-align: center; margin: 4px 0; color: #38bdf8; font-size: 1.1rem;'>Semana: {start_of_week.strftime('%d/%m')} al {end_of_week.strftime('%d/%m')}</h4>",
+                unsafe_allow_html=True
+            )
+
+        with col_w_next:
+            if st.button("Semana Sig. ▶", use_container_width=True, key="btn_native_w_next"):
+                st.session_state.agenda_date += timedelta(days=7)
+                st.session_state.cal_month = st.session_state.agenda_date.month
+                st.session_state.cal_year = st.session_state.agenda_date.year
+                st.rerun()
+
         turnos_semana = get_turnos(start_date=start_of_week, end_date=end_of_week)
         turnos_semana_map: Dict[str, List[Dict[str, Any]]] = {}
         for t in turnos_semana:
             turnos_semana_map.setdefault(str(t.get("fecha", "")), []).append(t)
 
         # Renderizar Grilla Semanal HTML 7 columnas
-        week_html = generate_week_calendar_html(start_of_week, current_date, turnos_semana_map)
-        st.markdown(week_html, unsafe_allow_html=True)
+        week_html = generate_week_calendar_html(start_of_week, current_date, turnos_semana_map, session_token=session_token)
+        st.html(week_html)
 
         col_ctrl_w1, col_ctrl_w2 = st.columns([1.5, 2])
         with col_ctrl_w1:
-            if st.button("⭐ Ir a Esta Semana", use_container_width=True, type="secondary"):
+            if st.button("⭐ Esta Semana", use_container_width=True, type="secondary"):
                 st.session_state.agenda_date = date.today()
+                st.session_state.cal_month = date.today().month
+                st.session_state.cal_year = date.today().year
                 st.rerun()
         with col_ctrl_w2:
             sel_w_input = st.date_input("Elegir fecha semanal", value=st.session_state.agenda_date, label_visibility="collapsed", key="picker_sem")
             if sel_w_input != st.session_state.agenda_date:
                 st.session_state.agenda_date = sel_w_input
+                st.session_state.cal_month = sel_w_input.month
+                st.session_state.cal_year = sel_w_input.year
                 st.rerun()
 
         # Detalle del día seleccionado
-        st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='margin-top: 0.8rem;'></div>", unsafe_allow_html=True)
         render_day_turnos_detail(st.session_state.agenda_date, clinic_name=clinic_name, show_title=True)
         return
 
