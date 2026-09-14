@@ -100,8 +100,22 @@ def main():
         if is_admin():
             menu_options.append("⚙️ Configuración & Sistema")
 
+        # MAPEO DE PÁGINAS A PARÁMETROS URL
+        page_map = {
+            "agenda": "📅 Agenda de Turnos",
+            "pacientes": "👥 Gestión de Pacientes",
+            "historial": "🩺 Historial Clínico",
+            "configuracion": "⚙️ Configuración & Sistema"
+        }
+        rev_page_map = {v: k for k, v in page_map.items()}
+
+        url_page = st.query_params.get("page", "agenda")
+        default_nav = page_map.get(url_page, menu_options[0])
+        if default_nav not in menu_options:
+            default_nav = menu_options[0]
+
         if "nav_selection" not in st.session_state or st.session_state.nav_selection not in menu_options:
-            st.session_state.nav_selection = menu_options[0]
+            st.session_state.nav_selection = default_nav
 
         selected_page = st.radio(
             "Navegación",
@@ -109,7 +123,11 @@ def main():
             label_visibility="collapsed",
             index=menu_options.index(st.session_state.nav_selection) if st.session_state.nav_selection in menu_options else 0
         )
-        st.session_state.nav_selection = selected_page
+        if selected_page != st.session_state.nav_selection:
+            st.session_state.nav_selection = selected_page
+            st.query_params["page"] = rev_page_map.get(selected_page, "agenda")
+        elif "page" not in st.query_params:
+            st.query_params["page"] = rev_page_map.get(selected_page, "agenda")
 
         st.markdown("<hr style='margin: 1rem 0 0.8rem 0; border-color: rgba(255,255,255,0.08);'/>", unsafe_allow_html=True)
 

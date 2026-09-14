@@ -161,12 +161,78 @@ def delete_usuario(user_id: str) -> Tuple[bool, str]:
     return True, "Usuario eliminado correctamente."
 
 # ==============================================================================
+# GENERACIÓN Y VALIDACIÓN DE TOKENS DE SESIÓN PERSISTENTE
+# ==============================================================================
+
+import hmac
+import base64
+
+def generate_session_token(user: Dict[str, Any]) -> str:
+    """Genera un token de sesión seguro y firmado para persistencia en móviles."""
+    u_id = str(user.get("id", ""))
+    u_name = str(user.get("username", ""))
+    u_pass_hash = str(user.get("password_hash", ""))
+    
+    # Firma criptográfica HMAC con la clave SALT
+    raw_sig_data = f"{u_id}:{u_name}:{u_pass_hash}".encode("utf-8")
+    sig = hmac.new(SALT.encode("utf-8"), raw_sig_data, hashlib.sha256).hexdigest()
+    
+    payload = f"{u_id}|{u_name}|{sig}"
+    return base64.urlsafe_b64encode(payload.encode("utf-8")).decode("utf-8")
+
+def validate_session_token(token: str) -> Optional[Dict[str, Any]]:
+    """Valida el token de sesión y retorna el usuario activo si es válido."""
+    if not token or not isinstance(token, str):
+        return None
+    try:
+        decoded = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
+        parts = decoded.split("|")
+        if len(parts) != 3:
+            return None
+        u_id, u_name, token_sig = parts
+        
+        user = get_usuario_by_username(u_name)
+        if not user or not user.get("activo", True):
+            return None
+            
+        u_pass_hash = str(user.get("password_hash", ""))
+        expected_sig = hmac.new(SALT.encode("utf-8"), f"{u_id}:{u_name}:{u_pass_hash}".encode("utf-8"), hashlib.sha256).hexdigest()
+        
+        if hmac.compare_digest(token_sig, expected_sig):
+            return user
+    except Exception:
+        pass
+    return None
+
+# ==============================================================================
 # CONTROL DE SESIÓN Y VISTA DE LOGIN
 # ==============================================================================
 
 def is_authenticated() -> bool:
-    """Verifica si el usuario actual ha iniciado sesión."""
-    return st.session_state.get("authenticated", False)
+    """
+    Verifica si el usuario actual ha iniciado sesión.
+    Si se perdió el estado en memoria (ej. bloqueo de celular o recarga),
+    restaura la sesión automáticamente usando el token persistente en la URL.
+    """
+    if st.session_state.get("authenticated", False) and st.session_state.get("current_user"):
+        return True
+        
+    # Verificar token persistente en st.query_params
+    token = st.query_params.get("session_token")
+    if token:
+        user = validate_session_token(token)
+        if user:
+            st.session_state.authenticated = True
+            st.session_state.current_user = user
+            return True
+        else:
+            # Token inválido o expirado, remover
+            try:
+                del st.query_params["session_token"]
+            except Exception:
+                pass
+                
+    return False
 
 def get_current_user() -> Optional[Dict[str, Any]]:
     """Devuelve los datos del usuario en sesión activa."""
@@ -178,9 +244,14 @@ def is_admin() -> bool:
     return bool(user and user.get("rol") == "admin")
 
 def logout():
-    """Cierra la sesión actual del usuario."""
+    """Cierra la sesión actual del usuario y elimina el token de persistencia."""
     st.session_state.authenticated = False
     st.session_state.current_user = None
+    if "session_token" in st.query_params:
+        try:
+            del st.query_params["session_token"]
+        except Exception:
+            pass
     st.rerun()
 
 def render_login_view():
@@ -224,6 +295,9 @@ def render_login_view():
                         if user and user.get("activo", True) and verify_password(password_input, user.get("password_hash", "")):
                             st.session_state.authenticated = True
                             st.session_state.current_user = user
+                            # Generar token persistente para no desloguearse al bloquear teléfono
+                            token = generate_session_token(user)
+                            st.query_params["session_token"] = token
                             st.toast(f"¡Bienvenido/a, {user.get('nombre')}!", icon="👋")
                             st.rerun()
                         else:
@@ -239,3 +313,4 @@ def render_login_view():
                 """,
                 unsafe_allow_html=True
             )
+

@@ -104,6 +104,11 @@ def modal_nuevo_paciente():
 def render_pacientes_view():
     """Renderiza la vista de Pacientes con navegación Master-Detail optimizada para móviles."""
     
+    # Recuperar estado de URL si existe
+    if "patient_id" in st.query_params and st.query_params["patient_id"]:
+        st.session_state.selected_paciente_id = st.query_params["patient_id"]
+        st.session_state.paciente_view_mode = "detail"
+
     # Inicializar estado de navegación
     if "paciente_view_mode" not in st.session_state:
         st.session_state.paciente_view_mode = "list" # "list" o "detail"
@@ -117,12 +122,19 @@ def render_pacientes_view():
 
         if not paciente_actual:
             st.session_state.paciente_view_mode = "list"
+            if "patient_id" in st.query_params:
+                del st.query_params["patient_id"]
             st.rerun()
             return
 
         # BOTÓN SUPERIOR DE RETORNO AL LISTADO (MOBILE FIRST)
         if st.button("⬅ Volver al Listado de Pacientes", key="btn_back_top", type="secondary", use_container_width=True):
             st.session_state.paciente_view_mode = "list"
+            if "patient_id" in st.query_params:
+                try:
+                    del st.query_params["patient_id"]
+                except Exception:
+                    pass
             st.rerun()
 
         st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
@@ -380,6 +392,11 @@ def render_pacientes_view():
         st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
         if st.button("⬅ Volver al Listado de Pacientes", key="btn_back_bottom", type="secondary", use_container_width=True):
             st.session_state.paciente_view_mode = "list"
+            if "patient_id" in st.query_params:
+                try:
+                    del st.query_params["patient_id"]
+                except Exception:
+                    pass
             st.rerun()
             
         return # Termina renderizado de la ficha
@@ -458,6 +475,7 @@ def render_pacientes_view():
             if st.button(f"👤 Ver Ficha de {p_nom}", key=f"btn_sel_{p_id}", type="primary", use_container_width=True):
                 st.session_state.selected_paciente_id = p_id
                 st.session_state.paciente_view_mode = "detail"
+                st.query_params["patient_id"] = p_id
                 st.rerun()
             
             st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)

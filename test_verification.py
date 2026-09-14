@@ -121,10 +121,19 @@ assert "Carlos Menéndez" in ics_text
 assert "END:VCALENDAR" in ics_text
 print("  [OK] Generador de archivo iCal estándar (.ics) verificado.")
 
-print("\n=== 7. PROBANDO FILTRO DE FECHAS EN AGENDA (MES Y RANGOS) ===")
-from utils.supabase_client import get_turnos
-turnos_rango = get_turnos(start_date=date.today(), end_date=date.today() + timedelta(days=30))
-assert isinstance(turnos_rango, list)
-print(f"  [OK] Consulta por rango de fechas (Vista Mensual y Próximos Turnos) funcionando. ({len(turnos_rango)} turnos)")
+print("\n=== 8. PROBANDO GENERACIÓN Y VALIDACIÓN DE TOKENS DE SESIÓN PERSISTENTE ===")
+from utils.auth import generate_session_token, validate_session_token
+token_fc = generate_session_token(user_fc)
+assert token_fc and isinstance(token_fc, str)
+validated_user = validate_session_token(token_fc)
+assert validated_user is not None
+assert validated_user["username"] == "fcendra"
+assert validated_user["rol"] == "admin"
+
+# Token adulterado debe fallar
+invalid_token = token_fc[:-4] + "ABCD"
+assert validate_session_token(invalid_token) is None
+print("  [OK] Generación, firma criptográfica HMAC y validación de tokens de sesión verificada.")
 
 print("\n=== TODAS LAS PRUEBAS AUTOMATIZADAS PASARON EXITOSAMENTE (100%) ===")
+

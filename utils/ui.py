@@ -249,34 +249,84 @@ def inject_custom_css():
         white-space: nowrap;
     }
 
+    /* Contenedor y tarjetas de la Grilla Semanal */
+    .week-grid-container {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .week-day-card {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 10px 6px;
+        text-align: center;
+        transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    .week-day-card:hover {
+        border-color: #38bdf8;
+        transform: translateY(-2px);
+    }
+
+    .week-day-card.today {
+        border: 2px solid #38bdf8;
+        background: rgba(56, 189, 248, 0.1);
+    }
+
+    .week-day-card.selected {
+        border: 2px solid #4ade80;
+        background: rgba(74, 222, 128, 0.12);
+    }
+
     /* Mobile specific tweaks */
     @media (max-width: 768px) {
         .block-container {
-            padding-top: 1rem !important;
-            padding-left: 0.8rem !important;
-            padding-right: 0.8rem !important;
+            padding-top: 0.8rem !important;
+            padding-left: 0.7rem !important;
+            padding-right: 0.7rem !important;
             padding-bottom: 2rem !important;
         }
         .kpi-card {
-            padding: 0.9rem !important;
-            margin-bottom: 0.5rem !important;
+            padding: 0.85rem !important;
+            margin-bottom: 0.4rem !important;
         }
         .kpi-value {
-            font-size: 1.5rem !important;
+            font-size: 1.45rem !important;
         }
         .cal-day-cell {
-            min-height: 58px !important;
-            padding: 4px 2px !important;
+            min-height: 52px !important;
+            padding: 4px 1px !important;
         }
         .cal-day-num {
-            font-size: 0.85rem !important;
+            font-size: 0.82rem !important;
         }
         .cal-day-badge {
-            font-size: 0.65rem !important;
-            padding: 1px 3px !important;
+            font-size: 0.62rem !important;
+            padding: 1px 2px !important;
+        }
+        .week-grid-container {
+            grid-template-columns: repeat(4, 1fr) !important;
         }
     }
     </style>
+
+    <script>
+    // Prevenir salida involuntaria de la app al presionar el botón "Atrás" en móviles
+    (function() {
+        if (window.history && window.history.pushState) {
+            if (!window.__kns_nav_initialized) {
+                window.__kns_nav_initialized = true;
+                window.history.pushState({ kns_state: "active" }, document.title, window.location.href);
+                window.addEventListener("popstate", function(e) {
+                    window.history.pushState({ kns_state: "active" }, document.title, window.location.href);
+                });
+            }
+        }
+    })();
+    </script>
     """
     st.markdown(custom_css, unsafe_allow_html=True)
 
