@@ -2,7 +2,7 @@ import sys
 import os
 import json
 import py_compile
-from datetime import date, time
+from datetime import date, time, datetime, timedelta
 
 print("=== 1. VERIFICANDO SINTAXIS DE TODOS LOS ARCHIVOS ===")
 files = [
@@ -10,6 +10,7 @@ files = [
     'utils/auth.py',
     'utils/quotes.py',
     'utils/whatsapp.py',
+    'utils/google_calendar.py',
     'utils/ui.py',
     'utils/supabase_client.py',
     'views/agenda.py',
@@ -82,9 +83,48 @@ print("\n=== 5. PROBANDO INTEGRACIÓN DE WHATSAPP ===")
 from utils.whatsapp import normalize_phone_number, generate_whatsapp_url, template_recordatorio_turno
 tel_norm = normalize_phone_number("011 15 6789 0123")
 assert tel_norm == "5491167890123"
-msg_w = template_recordatorio_turno("Carlos", "13/09/2026", "08:30")
+msg_w = template_recordatorio_turno("Carlos", "13/09/2026", "08:30", gcal_url="https://calendar.google.com/test")
 url_w = generate_whatsapp_url(tel_norm, msg_w)
 assert "KNS%20Kinesiolog%C3%ADa" in url_w
-print("  [OK] Normalización y plantillas de WhatsApp verificadas.")
+assert "calendar.google.com" in url_w
+print("  [OK] Normalización y plantillas de WhatsApp con Google Calendar verificadas.")
+
+print("\n=== 6. PROBANDO GENERADOR DE GOOGLE CALENDAR Y .ICS ===")
+from utils.google_calendar import generate_google_calendar_url, generate_turno_google_url, generate_ics_content
+g_url = generate_google_calendar_url(
+    title="Turno KNS",
+    start_dt=datetime(2026, 9, 20, 9, 0),
+    end_dt=datetime(2026, 9, 20, 9, 45),
+    details="Prueba turno",
+    location="Consultorio KNS"
+)
+assert "https://calendar.google.com/calendar/render" in g_url
+assert "20260920T090000" in g_url
+print("  [OK] URL 1-clic de Google Calendar generada correctamente.")
+
+test_turnos = [
+    {
+        "id": "t1",
+        "fecha": "2026-09-25",
+        "hora_inicio": "08:30:00",
+        "hora_fin": "09:15:00",
+        "paciente_nombre": "Carlos Menéndez",
+        "paciente_obra_social": "OSDE 210",
+        "estado": "Pendiente",
+        "notas": "Fisioterapia"
+    }
+]
+ics_text = generate_ics_content(test_turnos, clinic_name="KNS Kinesiología")
+assert "BEGIN:VCALENDAR" in ics_text
+assert "BEGIN:VEVENT" in ics_text
+assert "Carlos Menéndez" in ics_text
+assert "END:VCALENDAR" in ics_text
+print("  [OK] Generador de archivo iCal estándar (.ics) verificado.")
+
+print("\n=== 7. PROBANDO FILTRO DE FECHAS EN AGENDA (MES Y RANGOS) ===")
+from utils.supabase_client import get_turnos
+turnos_rango = get_turnos(start_date=date.today(), end_date=date.today() + timedelta(days=30))
+assert isinstance(turnos_rango, list)
+print(f"  [OK] Consulta por rango de fechas (Vista Mensual y Próximos Turnos) funcionando. ({len(turnos_rango)} turnos)")
 
 print("\n=== TODAS LAS PRUEBAS AUTOMATIZADAS PASARON EXITOSAMENTE (100%) ===")

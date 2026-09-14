@@ -175,29 +175,106 @@ def inject_custom_css():
         text-decoration: none;
     }
 
-    /* Barra de progreso de sesiones */
-    .session-bar-container {
-        background-color: rgba(255, 255, 255, 0.1);
+    /* Botón de Google Calendar estilizado */
+    .btn-gcal {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background-color: #1a73e8;
+        color: #ffffff !important;
+        padding: 0.4rem 0.8rem;
         border-radius: 8px;
-        height: 10px;
-        width: 100%;
-        overflow: hidden;
-        margin-top: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: background-color 0.2s ease, transform 0.1s ease;
+        border: 1px solid rgba(255,255,255,0.15);
     }
 
-    .session-bar-fill {
-        height: 100%;
-        border-radius: 8px;
-        transition: width 0.3s ease;
+    .btn-gcal:hover {
+        background-color: #1557b0;
+        transform: translateY(-1px);
+        text-decoration: none;
     }
 
-    /* Timeline slot de turnos */
-    .timeline-slot {
-        padding: 0.6rem 0.9rem;
+    /* Contenedor del calendario mensual */
+    .cal-grid-header {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 6px;
+        text-align: center;
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: #94a3b8;
+        margin-bottom: 6px;
+    }
+
+    .cal-day-cell {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 8px;
-        border-left: 4px solid #0284c7;
-        background-color: rgba(30, 41, 59, 0.6);
-        margin-bottom: 0.5rem;
+        padding: 8px 4px;
+        text-align: center;
+        min-height: 68px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .cal-day-cell.today {
+        border: 2px solid #38bdf8;
+        background: rgba(56, 189, 248, 0.08);
+    }
+
+    .cal-day-cell.selected {
+        border: 2px solid #4ade80;
+        background: rgba(74, 222, 128, 0.1);
+    }
+
+    .cal-day-num {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #f8fafc;
+    }
+
+    .cal-day-badge {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 2px 5px;
+        border-radius: 4px;
+        margin-top: 2px;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    /* Mobile specific tweaks */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 1rem !important;
+            padding-left: 0.8rem !important;
+            padding-right: 0.8rem !important;
+            padding-bottom: 2rem !important;
+        }
+        .kpi-card {
+            padding: 0.9rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        .kpi-value {
+            font-size: 1.5rem !important;
+        }
+        .cal-day-cell {
+            min-height: 58px !important;
+            padding: 4px 2px !important;
+        }
+        .cal-day-num {
+            font-size: 0.85rem !important;
+        }
+        .cal-day-badge {
+            font-size: 0.65rem !important;
+            padding: 1px 3px !important;
+        }
     }
     </style>
     """
@@ -299,3 +376,8 @@ def render_daily_quote_box(quote_data: Dict[str, Any]):
         """,
         unsafe_allow_html=True
     )
+
+def render_google_calendar_button(gcal_url: str, label: str = "📅 Google Calendar") -> str:
+    """Devuelve el fragmento HTML estilizado para el botón de Google Calendar."""
+    return f'<a href="{gcal_url}" target="_blank" class="btn-gcal" title="Agregar a Google Calendar">{label}</a>'
+

@@ -341,14 +341,23 @@ def delete_paciente(paciente_id: str) -> Tuple[bool, str]:
 # OPERACIONES CRUD: TURNOS Y AGENDA
 # ==============================================================================
 
-def get_turnos(target_date: Optional[date] = None, paciente_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Obtiene los turnos filtrados por fecha o paciente con datos del paciente."""
+def get_turnos(
+    target_date: Optional[date] = None,
+    paciente_id: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None
+) -> List[Dict[str, Any]]:
+    """Obtiene los turnos filtrados por fecha puntual, rango de fechas o paciente con datos del paciente."""
     client = init_supabase_client()
     if client:
         try:
-            req = client.table("turnos").select("*, pacientes(id, nombre_completo, telefono, obra_social, sesiones_totales, sesiones_realizadas)").order("hora_inicio")
+            req = client.table("turnos").select("*, pacientes(id, nombre_completo, telefono, obra_social, sesiones_totales, sesiones_realizadas)").order("fecha").order("hora_inicio")
             if target_date:
                 req = req.eq("fecha", target_date.isoformat())
+            if start_date:
+                req = req.gte("fecha", start_date.isoformat())
+            if end_date:
+                req = req.lte("fecha", end_date.isoformat())
             if paciente_id:
                 req = req.eq("paciente_id", str(paciente_id))
             res = req.execute()
@@ -371,6 +380,12 @@ def get_turnos(target_date: Optional[date] = None, paciente_id: Optional[str] = 
     if target_date:
         t_date_str = target_date.isoformat()
         turnos = [t for t in turnos if t.get("fecha") == t_date_str]
+    if start_date:
+        s_date_str = start_date.isoformat()
+        turnos = [t for t in turnos if t.get("fecha", "") >= s_date_str]
+    if end_date:
+        e_date_str = end_date.isoformat()
+        turnos = [t for t in turnos if t.get("fecha", "") <= e_date_str]
     if paciente_id:
         turnos = [t for t in turnos if str(t.get("paciente_id")) == str(paciente_id)]
     
@@ -383,7 +398,7 @@ def get_turnos(target_date: Optional[date] = None, paciente_id: Optional[str] = 
         t["paciente_sesiones_totales"] = p.get("sesiones_totales", 10)
         t["paciente_sesiones_realizadas"] = p.get("sesiones_realizadas", 0)
         
-    return sorted(turnos, key=lambda x: str(x.get("hora_inicio", "")))
+    return sorted(turnos, key=lambda x: (str(x.get("fecha", "")), str(x.get("hora_inicio", ""))))
 
 def _time_to_minutes(t_val: Any) -> int:
     """Convierte un objeto time o string 'HH:MM:SS' a minutos desde la medianoche."""

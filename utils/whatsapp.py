@@ -68,13 +68,15 @@ def template_recordatorio_turno(
     nombre_paciente: str,
     fecha_str: str,
     hora_str: str,
-    consultorio: str = "KNS Kinesiología"
+    consultorio: str = "KNS Kinesiología",
+    gcal_url: Optional[str] = None
 ) -> str:
     """Mensaje para recordar turno del día o de la semana."""
+    cal_txt = f"\n\n📅 Guardar en tu Google Calendar:\n{gcal_url}" if gcal_url else ""
     return (
         f"👋 Hola {nombre_paciente}, ¿cómo estás? Te escribimos de *{consultorio}*.\n\n"
         f"📅 Te recordamos tu próximo turno de kinesiología para el día *{fecha_str}* a las *{hora_str} hs*.\n\n"
-        f"📍 Te pedimos por favor puntualidad y asistir con ropa cómoda.\n"
+        f"📍 Te pedimos por favor puntualidad y asistir con ropa cómoda.{cal_txt}\n\n"
         f"¡Muchas gracias! Si necesitás reprogramar, avisanos por este medio."
     )
 
@@ -83,13 +85,15 @@ def template_confirmacion_turno(
     fecha_str: str,
     hora_str: str,
     duracion_minutos: int = 45,
-    consultorio: str = "KNS Kinesiología"
+    consultorio: str = "KNS Kinesiología",
+    gcal_url: Optional[str] = None
 ) -> str:
     """Mensaje tras agendar un nuevo turno."""
+    cal_txt = f"\n\n📅 Agregalo a tu Google Calendar con un clic:\n{gcal_url}" if gcal_url else ""
     return (
         f"✅ Hola {nombre_paciente}! Tu turno en *{consultorio}* ha sido agendado con éxito:\n\n"
         f"🗓 *Fecha:* {fecha_str}\n"
-        f"⏰ *Horario:* {hora_str} hs ({duracion_minutos} min)\n\n"
+        f"⏰ *Horario:* {hora_str} hs ({duracion_minutos} min){cal_txt}\n\n"
         f"Por favor recordá traer tu orden médica y estudios complementarios si es tu primera sesión.\n"
         f"¡Te esperamos!"
     )
