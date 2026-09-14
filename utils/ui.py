@@ -197,6 +197,147 @@ def inject_custom_css():
         text-decoration: none;
     }
 
+    /* Calendario 7 Columnas Table Grid (Inmune a colapsos móviles) */
+    .kns-cal-container {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+
+    .kns-month-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(145deg, #1e293b, #0f172a);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 8px 12px;
+        margin-bottom: 10px;
+    }
+
+    .kns-month-title {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #38bdf8;
+        text-align: center;
+    }
+
+    .kns-month-nav-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 255, 255, 0.08);
+        color: #f8fafc !important;
+        text-decoration: none !important;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        transition: background 0.15s ease;
+    }
+
+    .kns-month-nav-btn:hover {
+        background: #0284c7;
+        color: #ffffff !important;
+    }
+
+    .kns-cal-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 4px;
+        table-layout: fixed;
+        margin-bottom: 10px;
+    }
+
+    .kns-cal-table th {
+        text-align: center;
+        font-weight: 800;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        padding: 4px 0;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kns-cal-table td {
+        text-align: center;
+        vertical-align: middle;
+        padding: 0;
+        width: 14.285%;
+    }
+
+    .kns-cal-cell {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 52px;
+        border-radius: 8px;
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        text-decoration: none !important;
+        color: #f8fafc !important;
+        padding: 4px 1px;
+        box-sizing: border-box;
+        transition: transform 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+    }
+
+    .kns-cal-cell:hover {
+        border-color: #38bdf8;
+        transform: scale(1.04);
+        background: #24344d;
+    }
+
+    .kns-cal-cell.today {
+        border: 2px solid #38bdf8 !important;
+        background: rgba(56, 189, 248, 0.12) !important;
+    }
+
+    .kns-cal-cell.selected {
+        background: #0284c7 !important;
+        border: 2px solid #38bdf8 !important;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+    }
+
+    .kns-cal-cell.empty {
+        background: rgba(15, 23, 42, 0.2);
+        border: 1px dashed rgba(255, 255, 255, 0.03);
+        pointer-events: none;
+        min-height: 52px;
+    }
+
+    .kns-day-num {
+        font-weight: 800;
+        font-size: 0.92rem;
+        line-height: 1.1;
+        color: #f8fafc;
+    }
+
+    .kns-day-badge {
+        font-size: 0.65rem;
+        font-weight: 700;
+        padding: 1px 4px;
+        border-radius: 4px;
+        margin-top: 3px;
+        display: inline-block;
+        white-space: nowrap;
+    }
+
+    .kns-badge-zero {
+        color: #64748b;
+        background: transparent;
+    }
+
+    .kns-badge-turnos {
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.18);
+    }
+
+    .kns-badge-full {
+        color: #facc15;
+        background: rgba(250, 204, 21, 0.18);
+    }
+
     /* Contenedor del calendario mensual */
     .cal-grid-header {
         display: grid;

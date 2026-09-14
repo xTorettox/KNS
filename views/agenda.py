@@ -1,6 +1,6 @@
 """
-Vista de Agenda y Gestión de Turnos (Mobile-First, Grillas Semanal/Mensual e Integración Google Calendar).
-Permite navegar el calendario por Mes o Semana en formato grilla interactiva,
+Vista de Agenda y Gestión de Turnos (Mobile-First, Grillas 7-Columnas Inquebrantables e Integración Google Calendar).
+Permite navegar el calendario por Mes o Semana en formato grilla real que no colapsa en móviles,
 inspeccionar turnos de cualquier día al tocarlo, ver la quincena contraída por día,
 y sincronizar con Google Calendar e iCal (.ics).
 """
@@ -48,6 +48,159 @@ MESES_ES = [
 
 DIAS_ES = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
 DIAS_COMPLETOS_ES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+
+# ==============================================================================
+# GENERADORES DE HTML PARA GRILLAS DE CALENDARIO 7 COLUMNAS (NO COLAPSAN EN MÓVIL)
+# ==============================================================================
+
+def generate_month_calendar_html(year: int, month: int, selected_date: date, turnos_por_dia: Dict[int, List[Dict[str, Any]]]) -> str:
+    """Genera la tabla HTML de 7 columnas del mes completo que no se rompe en pantallas móviles."""
+    month_matrix = calendar.monthcalendar(year, month)
+    today = date.today()
+    
+    if month == 1:
+        prev_m, prev_y = 12, year - 1
+    else:
+        prev_m, prev_y = month - 1, year
+        
+    if month == 12:
+        next_m, next_y = 1, year + 1
+    else:
+        next_m, next_y = month + 1, year
+
+    html = []
+    html.append('<div class="kns-cal-container">')
+    
+    # Barra superior de navegación de mes
+    html.append(f'''
+    <div class="kns-month-bar">
+        <a href="?page=agenda&cal_month={prev_m}&cal_year={prev_y}&view_mode=month" target="_self" class="kns-month-nav-btn">◀ Anterior</a>
+        <div class="kns-month-title">🗓️ {MESES_ES[month]} {year}</div>
+        <a href="?page=agenda&cal_month={next_m}&cal_year={next_y}&view_mode=month" target="_self" class="kns-month-nav-btn">Siguiente ▶</a>
+    </div>
+    ''')
+    
+    # Tabla 7 columnas
+    html.append('<table class="kns-cal-table">')
+    html.append('<thead><tr>')
+    for d_name in DIAS_ES:
+        html.append(f'<th>{d_name}</th>')
+    html.append('</tr></thead>')
+    html.append('<tbody>')
+    
+    for week in month_matrix:
+        html.append('<tr>')
+        for day_num in week:
+            if day_num == 0:
+                html.append('<td><div class="kns-cal-cell empty"></div></td>')
+            else:
+                d_date = date(year, month, day_num)
+                is_today = (d_date == today)
+                is_selected = (d_date == selected_date)
+                
+                turnos_d = turnos_por_dia.get(day_num, [])
+                cant = len(turnos_d)
+                
+                if cant == 0:
+                    badge_html = '<span class="kns-day-badge kns-badge-zero">0 t.</span>'
+                elif cant < 4:
+                    badge_html = f'<span class="kns-day-badge kns-badge-turnos">{cant} t.</span>'
+                else:
+                    badge_html = f'<span class="kns-day-badge kns-badge-full">{cant} t.</span>'
+                    
+                classes = ["kns-cal-cell"]
+                if is_today:
+                    classes.append("today")
+                if is_selected:
+                    classes.append("selected")
+                    
+                cls_str = " ".join(classes)
+                d_iso = d_date.isoformat()
+                
+                star_txt = "★ " if is_today else ""
+                
+                html.append(f'''
+                <td>
+                    <a href="?page=agenda&cal_date={d_iso}&cal_month={month}&cal_year={year}&view_mode=month" target="_self" class="{cls_str}">
+                        <div class="kns-day-num">{star_txt}{day_num}</div>
+                        {badge_html}
+                    </a>
+                </td>
+                ''')
+        html.append('</tr>')
+        
+    html.append('</tbody></table>')
+    html.append('</div>')
+    return "".join(html)
+
+def generate_week_calendar_html(start_of_week: date, selected_date: date, turnos_semana_map: Dict[str, List[Dict[str, Any]]]) -> str:
+    """Genera la tabla HTML de 7 columnas de la semana actual."""
+    end_of_week = start_of_week + timedelta(days=6)
+    today = date.today()
+    
+    prev_week_date = start_of_week - timedelta(days=7)
+    next_week_date = start_of_week + timedelta(days=7)
+    
+    html = []
+    html.append('<div class="kns-cal-container">')
+    
+    # Barra de navegación semanal
+    html.append(f'''
+    <div class="kns-month-bar">
+        <a href="?page=agenda&cal_date={prev_week_date.isoformat()}&view_mode=week" target="_self" class="kns-month-nav-btn">◀ Semana Ant.</a>
+        <div class="kns-month-title">Semana del {start_of_week.strftime('%d/%m')} al {end_of_week.strftime('%d/%m')}</div>
+        <a href="?page=agenda&cal_date={next_week_date.isoformat()}&view_mode=week" target="_self" class="kns-month-nav-btn">Semana Sig. ▶</a>
+    </div>
+    ''')
+    
+    html.append('<table class="kns-cal-table">')
+    html.append('<thead><tr>')
+    for d_name in DIAS_ES:
+        html.append(f'<th>{d_name}</th>')
+    html.append('</tr></thead>')
+    html.append('<tbody><tr>')
+    
+    for idx in range(7):
+        d_curr = start_of_week + timedelta(days=idx)
+        d_iso = d_curr.isoformat()
+        is_today = (d_curr == today)
+        is_selected = (d_curr == selected_date)
+        
+        turnos_d = turnos_semana_map.get(d_iso, [])
+        cant = len(turnos_d)
+        
+        if cant == 0:
+            badge_html = '<span class="kns-day-badge kns-badge-zero">0 t.</span>'
+        elif cant < 4:
+            badge_html = f'<span class="kns-day-badge kns-badge-turnos">{cant} t.</span>'
+        else:
+            badge_html = f'<span class="kns-day-badge kns-badge-full">{cant} t.</span>'
+            
+        classes = ["kns-cal-cell"]
+        if is_today:
+            classes.append("today")
+        if is_selected:
+            classes.append("selected")
+            
+        cls_str = " ".join(classes)
+        star_txt = "★ " if is_today else ""
+        
+        html.append(f'''
+        <td>
+            <a href="?page=agenda&cal_date={d_iso}&view_mode=week" target="_self" class="{cls_str}">
+                <div class="kns-day-num">{star_txt}{d_curr.day}</div>
+                {badge_html}
+            </a>
+        </td>
+        ''')
+        
+    html.append('</tr></tbody></table>')
+    html.append('</div>')
+    return "".join(html)
+
+# ==============================================================================
+# DETALLE DEL DÍA INSPECCIONADO
+# ==============================================================================
 
 def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bool = True):
     """Renderiza el detalle de turnos, acciones, WhatsApp, Google Calendar y matriz de un día específico."""
@@ -110,7 +263,6 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
 
                 c_det1, c_det2, c_det3, c_det4, c_det5 = st.columns([2, 1.4, 1.4, 1.3, 1.3])
                 
-                # 1. Indicador de sesiones y notas
                 with c_det1:
                     st.markdown(render_session_progress(ses_real, ses_tot), unsafe_allow_html=True)
                     if notas:
@@ -118,7 +270,6 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                     if motivo_ajuste:
                         st.caption(f"⏱ *Ajuste:* {motivo_ajuste}")
 
-                # 2. Botón WhatsApp Directo
                 with c_det2:
                     msg_wa = template_recordatorio_turno(p_nombre, target_date_str, h_ini, consultorio=clinic_name, gcal_url=gcal_url_t)
                     wa_url = generate_whatsapp_url(p_tel, msg_wa)
@@ -127,14 +278,12 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                         unsafe_allow_html=True
                     )
 
-                # 3. Botón Google Calendar
                 with c_det3:
                     st.markdown(
                         f'<a href="{gcal_url_t}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Google Cal</a>',
                         unsafe_allow_html=True
                     )
 
-                # 4. Cambio rápido de estado
                 with c_det4:
                     estados_opciones = ["Pendiente", "Asistió", "Cancelado", "Reprogramado", "Ausente"]
                     idx_estado = estados_opciones.index(estado) if estado in estados_opciones else 0
@@ -153,7 +302,6 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                         else:
                             st.error(msg)
 
-                # 5. Edición / Ajuste
                 with c_det5:
                     with st.popover("⚙️ Ajustar", use_container_width=True):
                         st.markdown("##### Ajustar Horario o Notas")
@@ -193,7 +341,6 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                                 st.warning("Turno eliminado.")
                                 st.rerun()
 
-                # Evolución clínica rápida si asistió
                 if estado == "Asistió":
                     with st.expander(f"🩺 Registrar Evolución de la Sesión para {p_nombre}"):
                         with st.form(key=f"grid_quick_evol_{t_id}"):
@@ -224,7 +371,6 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
 
                 st.markdown("<div style='margin-bottom: 12px;'></div>", unsafe_allow_html=True)
 
-    # Matriz de Ocupación Horaria para el día inspeccionado
     with st.expander(f"📊 Ver Ocupación Horaria de Camillas ({target_date_str})", expanded=False):
         time_slots = []
         curr_time = datetime.combine(target_date, time(8, 0))
@@ -280,11 +426,44 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                 unsafe_allow_html=True
             )
 
+# ==============================================================================
+# VISTA PRINCIPAL DE LA AGENDA
+# ==============================================================================
 
 def render_agenda_view():
     """Renderiza la vista principal de la agenda kinesiológica con Grilla Mensual, Grilla Semanal y Próximos 15 Días."""
     app_config = get_app_config()
     clinic_name = app_config.get("clinic_name", "KNS Kinesiología")
+
+    # Sincronizar parámetros de URL
+    if "cal_date" in st.query_params:
+        try:
+            st.session_state.agenda_date = datetime.strptime(st.query_params["cal_date"], "%Y-%m-%d").date()
+            st.session_state.cal_month = st.session_state.agenda_date.month
+            st.session_state.cal_year = st.session_state.agenda_date.year
+        except Exception:
+            pass
+
+    if "cal_month" in st.query_params:
+        try:
+            st.session_state.cal_month = int(st.query_params["cal_month"])
+        except Exception:
+            pass
+
+    if "cal_year" in st.query_params:
+        try:
+            st.session_state.cal_year = int(st.query_params["cal_year"])
+        except Exception:
+            pass
+
+    if "view_mode" in st.query_params:
+        v_param = st.query_params["view_mode"]
+        if v_param == "month":
+            st.session_state.agenda_view_mode = "🗓️ Grilla Mensual"
+        elif v_param == "week":
+            st.session_state.agenda_view_mode = "📅 Grilla Semanal"
+        elif v_param == "15d":
+            st.session_state.agenda_view_mode = "📋 Próximos 15 Días (Contraído)"
 
     if "agenda_view_mode" not in st.session_state:
         st.session_state.agenda_view_mode = "🗓️ Grilla Mensual"
@@ -313,7 +492,6 @@ def render_agenda_view():
         st.session_state.agenda_view_mode = selected_mode
 
     with col_export:
-        # Botón de exportación .ics
         all_future_turnos = get_turnos(start_date=date.today())
         ics_data = generate_ics_content(all_future_turnos, clinic_name=clinic_name)
         st.download_button(
@@ -328,54 +506,18 @@ def render_agenda_view():
     st.markdown("---")
 
     # ==============================================================================
-    # MODO 1: 🗓️ GRILLA MENSUAL (CALENDARIO COMPLETO + INSPECTOR DIARIO)
+    # MODO 1: 🗓️ GRILLA MENSUAL (TABLA 7 COLUMNAS INQUEBRANTABLE + INSPECTOR)
     # ==============================================================================
     if selected_mode == "🗓️ Grilla Mensual":
         cal_y = st.session_state.cal_year
         cal_m = st.session_state.cal_month
 
-        # Barra de navegación del mes
-        col_m_prev, col_m_title, col_m_next, col_m_today = st.columns([1, 2.5, 1, 1.2])
-        
-        with col_m_prev:
-            if st.button("◀ Mes Anterior", use_container_width=True, key="btn_month_prev"):
-                if cal_m == 1:
-                    st.session_state.cal_month = 12
-                    st.session_state.cal_year -= 1
-                else:
-                    st.session_state.cal_month -= 1
-                st.rerun()
-
-        with col_m_title:
-            st.markdown(
-                f"<h3 style='text-align: center; margin: 0; color: #38bdf8;'>🗓️ {MESES_ES[cal_m]} {cal_y}</h3>",
-                unsafe_allow_html=True
-            )
-
-        with col_m_next:
-            if st.button("Mes Siguiente ▶", use_container_width=True, key="btn_month_next"):
-                if cal_m == 12:
-                    st.session_state.cal_month = 1
-                    st.session_state.cal_year += 1
-                else:
-                    st.session_state.cal_month += 1
-                st.rerun()
-
-        with col_m_today:
-            if st.button("📅 Mes Actual", use_container_width=True, type="secondary", key="btn_month_today"):
-                st.session_state.cal_month = date.today().month
-                st.session_state.cal_year = date.today().year
-                st.session_state.agenda_date = date.today()
-                st.rerun()
-
-        # Obtener todos los turnos del mes
         num_days_in_month = calendar.monthrange(cal_y, cal_m)[1]
         start_month_date = date(cal_y, cal_m, 1)
         end_month_date = date(cal_y, cal_m, num_days_in_month)
         
         turnos_mes = get_turnos(start_date=start_month_date, end_date=end_month_date)
         
-        # Agrupar turnos por día
         turnos_por_dia: Dict[int, List[Dict[str, Any]]] = {}
         for t in turnos_mes:
             f_str = str(t.get("fecha", ""))
@@ -386,139 +528,61 @@ def render_agenda_view():
             except Exception:
                 pass
 
-        st.caption("Toca cualquier día para ver sus turnos y ocupación:")
+        # Renderizar Grilla HTML 7 columnas
+        grid_html = generate_month_calendar_html(cal_y, cal_m, st.session_state.agenda_date, turnos_por_dia)
+        st.markdown(grid_html, unsafe_allow_html=True)
 
-        # Encabezados de días de la semana
-        cols_headers = st.columns(7)
-        for i, nom_dia in enumerate(DIAS_ES):
-            with cols_headers[i]:
-                st.markdown(f"<div style='text-align: center; font-weight: 800; color: #94a3b8; font-size: 0.85rem; padding: 4px;'>{nom_dia}</div>", unsafe_allow_html=True)
+        # Botón para volver a hoy o seleccionar fecha puntual
+        col_ctrl1, col_ctrl2 = st.columns([1.5, 2])
+        with col_ctrl1:
+            if st.button("⭐ Ir al Día de Hoy", use_container_width=True, type="secondary"):
+                st.session_state.agenda_date = date.today()
+                st.session_state.cal_month = date.today().month
+                st.session_state.cal_year = date.today().year
+                st.rerun()
+        with col_ctrl2:
+            sel_d_input = st.date_input("Elegir fecha directamente", value=st.session_state.agenda_date, label_visibility="collapsed")
+            if sel_d_input != st.session_state.agenda_date:
+                st.session_state.agenda_date = sel_d_input
+                st.session_state.cal_month = sel_d_input.month
+                st.session_state.cal_year = sel_d_input.year
+                st.rerun()
 
-        # Matriz de semanas del mes
-        month_matrix = calendar.monthcalendar(cal_y, cal_m)
-        today = date.today()
-
-        for week in month_matrix:
-            cols_week = st.columns(7)
-            for day_idx, day_num in enumerate(week):
-                with cols_week[day_idx]:
-                    if day_num == 0:
-                        st.markdown("<div style='min-height: 54px; background: rgba(15,23,42,0.25); border-radius: 8px; margin-bottom: 4px;'></div>", unsafe_allow_html=True)
-                    else:
-                        d_date = date(cal_y, cal_m, day_num)
-                        is_today = (d_date == today)
-                        is_selected = (d_date == st.session_state.agenda_date)
-                        turnos_d = turnos_por_dia.get(day_num, [])
-                        cant_turnos = len(turnos_d)
-                        
-                        if cant_turnos == 0:
-                            badge_html = "<span style='color: #64748b; font-size: 0.72rem;'>0 turnos</span>"
-                        elif cant_turnos < 4:
-                            badge_html = f"<span style='color: #38bdf8; font-weight: 700; font-size: 0.75rem; background: rgba(56,189,248,0.15); padding: 1px 4px; border-radius: 4px;'>{cant_turnos} turnos</span>"
-                        else:
-                            badge_html = f"<span style='color: #facc15; font-weight: 700; font-size: 0.75rem; background: rgba(250,204,21,0.15); padding: 1px 4px; border-radius: 4px;'>{cant_turnos} turnos</span>"
-
-                        border_style = "2px solid #38bdf8" if is_today else "2px solid #4ade80" if is_selected else "1px solid rgba(255,255,255,0.08)"
-                        bg_style = "rgba(56,189,248,0.12)" if is_today else "rgba(74,222,128,0.1)" if is_selected else "#1e293b"
-
-                        st.markdown(
-                            f"""
-                            <div style="background: {bg_style}; border: {border_style}; border-radius: 8px; padding: 4px 2px; text-align: center; margin-bottom: 2px;">
-                                <div style="font-weight: 800; font-size: 0.95rem; color: {'#38bdf8' if is_today else '#4ade80' if is_selected else '#f8fafc'};">{day_num}</div>
-                                <div>{badge_html}</div>
-                            </div>
-                            """,
-                            unsafe_allow_html=True
-                        )
-                        
-                        btn_lbl = "⭐ Hoy" if is_today else f"🔍 {day_num}"
-                        if st.button(btn_lbl, key=f"btn_grid_m_{cal_y}_{cal_m}_{day_num}", use_container_width=True):
-                            st.session_state.agenda_date = d_date
-                            st.rerun()
-
-        # Detalle del día seleccionado debajo de la grilla mensual
-        st.markdown("<div style='margin-top: 1.2rem;'></div>", unsafe_allow_html=True)
+        # Detalle del día seleccionado
+        st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
         render_day_turnos_detail(st.session_state.agenda_date, clinic_name=clinic_name, show_title=True)
         return
 
     # ==============================================================================
-    # MODO 2: 📅 GRILLA SEMANAL (VISTA DE 7 DÍAS + INSPECTOR)
+    # MODO 2: 📅 GRILLA SEMANAL (7 DÍAS HORIZONTALES + INSPECTOR)
     # ==============================================================================
     elif selected_mode == "📅 Grilla Semanal":
         current_date = st.session_state.agenda_date
-        
-        # Calcular Lunes de la semana actual
         start_of_week = current_date - timedelta(days=current_date.weekday())
         end_of_week = start_of_week + timedelta(days=6)
         
-        col_w_prev, col_w_title, col_w_next, col_w_today = st.columns([1, 2.5, 1, 1.2])
-        
-        with col_w_prev:
-            if st.button("◀ Semana Anterior", use_container_width=True, key="btn_week_prev"):
-                st.session_state.agenda_date -= timedelta(days=7)
-                st.rerun()
-
-        with col_w_title:
-            st.markdown(
-                f"<h4 style='text-align: center; margin: 0; color: #38bdf8;'>Semana: {start_of_week.strftime('%d/%m')} al {end_of_week.strftime('%d/%m/%Y')}</h4>",
-                unsafe_allow_html=True
-            )
-
-        with col_w_next:
-            if st.button("Semana Siguiente ▶", use_container_width=True, key="btn_week_next"):
-                st.session_state.agenda_date += timedelta(days=7)
-                st.rerun()
-
-        with col_w_today:
-            if st.button("📅 Esta Semana", use_container_width=True, type="secondary", key="btn_week_today"):
-                st.session_state.agenda_date = date.today()
-                st.rerun()
-
-        # Obtener turnos de la semana
         turnos_semana = get_turnos(start_date=start_of_week, end_date=end_of_week)
         turnos_semana_map: Dict[str, List[Dict[str, Any]]] = {}
         for t in turnos_semana:
             turnos_semana_map.setdefault(str(t.get("fecha", "")), []).append(t)
 
-        st.caption("Selecciona el día que deseas inspeccionar:")
+        # Renderizar Grilla Semanal HTML 7 columnas
+        week_html = generate_week_calendar_html(start_of_week, current_date, turnos_semana_map)
+        st.markdown(week_html, unsafe_allow_html=True)
 
-        cols_dias_semana = st.columns(7)
-        today = date.today()
+        col_ctrl_w1, col_ctrl_w2 = st.columns([1.5, 2])
+        with col_ctrl_w1:
+            if st.button("⭐ Ir a Esta Semana", use_container_width=True, type="secondary"):
+                st.session_state.agenda_date = date.today()
+                st.rerun()
+        with col_ctrl_w2:
+            sel_w_input = st.date_input("Elegir fecha semanal", value=st.session_state.agenda_date, label_visibility="collapsed", key="picker_sem")
+            if sel_w_input != st.session_state.agenda_date:
+                st.session_state.agenda_date = sel_w_input
+                st.rerun()
 
-        for idx in range(7):
-            d_curr = start_of_week + timedelta(days=idx)
-            d_str = d_curr.isoformat()
-            turnos_en_dia = turnos_semana_map.get(d_str, [])
-            cant_t = len(turnos_en_dia)
-            
-            is_today = (d_curr == today)
-            is_selected = (d_curr == current_date)
-            
-            with cols_dias_semana[idx]:
-                badge_txt = f"{cant_t} turnos" if cant_t > 0 else "0 turnos"
-                color_b = "#38bdf8" if cant_t > 0 else "#64748b"
-                
-                border_s = "2px solid #38bdf8" if is_today else "2px solid #4ade80" if is_selected else "1px solid rgba(255,255,255,0.08)"
-                bg_s = "rgba(56,189,248,0.12)" if is_today else "rgba(74,222,128,0.1)" if is_selected else "#1e293b"
-
-                st.markdown(
-                    f"""
-                    <div style="background: {bg_s}; border: {border_s}; border-radius: 10px; padding: 8px 4px; text-align: center; margin-bottom: 4px;">
-                        <div style="font-size: 0.8rem; font-weight: 700; color: #94a3b8;">{DIAS_ES[idx]}</div>
-                        <div style="font-size: 1.1rem; font-weight: 800; color: {'#38bdf8' if is_today else '#4ade80' if is_selected else '#f8fafc'};">{d_curr.strftime('%d/%m')}</div>
-                        <div style="font-size: 0.72rem; color: {color_b}; font-weight: 600; margin-top: 2px;">{badge_txt}</div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-                
-                btn_w_lbl = "⭐ Hoy" if is_today else "🔍 Ver"
-                if st.button(btn_w_lbl, key=f"btn_w_day_{d_curr.isoformat()}", use_container_width=True):
-                    st.session_state.agenda_date = d_curr
-                    st.rerun()
-
-        # Detalle del día de la semana seleccionado
-        st.markdown("<div style='margin-top: 1.2rem;'></div>", unsafe_allow_html=True)
+        # Detalle del día seleccionado
+        st.markdown("<div style='margin-top: 1rem;'></div>", unsafe_allow_html=True)
         render_day_turnos_detail(st.session_state.agenda_date, clinic_name=clinic_name, show_title=True)
         return
 
@@ -543,7 +607,6 @@ def render_agenda_view():
         if not turnos_15:
             st.info("No hay turnos agendados en los próximos 15 días.")
         else:
-            # Agrupar por fecha
             turnos_agrupados: Dict[str, List[Dict[str, Any]]] = {}
             for t in turnos_15:
                 turnos_agrupados.setdefault(t.get("fecha", ""), []).append(t)
@@ -615,7 +678,7 @@ def render_agenda_view():
         return
 
     # ==============================================================================
-    # MODO 4: ➕ AGENDAR NUEVO TURNO (SELECTOR DE FECHA DIRECTO)
+    # MODO 4: ➕ AGENDAR NUEVO TURNO
     # ==============================================================================
     elif selected_mode == "➕ Agendar Turno":
         st.markdown("#### Agendar Turno Kinesiológico")
