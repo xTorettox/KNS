@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # 2. Importaciones de utilidades, autenticación y vistas
-from utils.ui import inject_custom_css, render_daily_quote_box
+from utils.ui import inject_custom_css, render_daily_quote_box, st_html
 from utils.quotes import get_daily_quote
 from utils.auth import (
     is_authenticated,
@@ -55,27 +55,28 @@ def main():
         clinic_name = app_config.get("clinic_name", "KNS")
         subtitle = app_config.get("subtitle", "KINESIOLOGÍA")
 
-        st.markdown("<div style='text-align: center; padding: 0.5rem 0;'>", unsafe_allow_html=True)
         if custom_logo_bytes:
             st.image(custom_logo_bytes, width=100)
+            icon_html = ""
         else:
-            st.markdown(f"<div style='font-size: 2.2rem; margin-bottom: -5px;'>{logo_icon}</div>", unsafe_allow_html=True)
+            icon_html = f"<div style='font-size: 2.2rem; margin-bottom: -5px;'>{logo_icon}</div>"
 
-        st.markdown(
+        st_html(
             f"""
+            <div style='text-align: center; padding: 0.5rem 0;'>
+                {icon_html}
                 <h2 style="margin: 0; color: #38bdf8; font-weight: 800; letter-spacing: -0.5px;">{clinic_name}</h2>
                 <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">{subtitle}</p>
             </div>
             <hr style="margin: 0.8rem 0; border-color: rgba(255,255,255,0.08);"/>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # INFORMACIÓN DEL USUARIO LOGUEADO
         rol_label = "Administrador" if is_admin() else "Kinesiólogo/a"
         rol_color = "#38bdf8" if is_admin() else "#4ade80"
         
-        st.markdown(
+        st_html(
             f"""
             <div style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
                 <div>
@@ -83,8 +84,7 @@ def main():
                     <div style="font-size: 0.72rem; color: {rol_color}; font-weight: 600;">{rol_label}</div>
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # MENÚ DE NAVEGACIÓN SEGÚN ROL

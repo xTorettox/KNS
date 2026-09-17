@@ -3,6 +3,7 @@ Módulo de componentes visuales, estilos CSS modernos e interfaz de usuario en S
 Provee una estética cuidada, profesional y agradable con badges, cards, grillas e indicadores.
 """
 import streamlit as st
+import textwrap
 from typing import Optional, Dict, Any
 
 def inject_custom_css():
@@ -385,12 +386,19 @@ def inject_custom_css():
     })();
     </script>
     """
-    st.markdown(custom_css, unsafe_allow_html=True)
+    st_html(custom_css)
+
+def st_html(html_str: str):
+    """Renderiza HTML en Streamlit asegurando que ninguna línea tenga indentación que active bloques de código de Markdown."""
+    if not html_str:
+        return
+    clean_html = textwrap.dedent(html_str).strip()
+    st.markdown(clean_html, unsafe_allow_html=True)
 
 def render_header(title: str, subtitle: Optional[str] = None, icon: str = "🩺"):
     """Renderiza un encabezado limpio y moderno para cada vista."""
     sub_html = f"<p style='color: #94a3b8; margin: 0; font-size: 0.92rem;'>{subtitle}</p>" if subtitle else ""
-    st.markdown(
+    st_html(
         f"""
         <div style="margin-bottom: 1.2rem;">
             <h2 style="margin: 0; color: #f8fafc; font-weight: 800; display: flex; align-items: center; gap: 0.5rem; font-size: 1.6rem;">
@@ -398,21 +406,19 @@ def render_header(title: str, subtitle: Optional[str] = None, icon: str = "🩺"
             </h2>
             {sub_html}
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 def render_kpi_card(title: str, value: Any, subtitle: Optional[str] = None, color: str = "#38bdf8"):
     """Renderiza una tarjeta de indicador clave (KPI)."""
-    st.markdown(
+    st_html(
         f"""
         <div class="kpi-card">
             <div class="kpi-title">{title}</div>
             <div class="kpi-value" style="color: {color};">{value}</div>
             {f'<div class="kpi-subtitle">{subtitle}</div>' if subtitle else ''}
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 def render_status_badge(estado: str) -> str:
@@ -447,7 +453,7 @@ def render_session_progress(sesiones_realizadas: int, sesiones_totales: int) -> 
         bar_color = "#10b981"
         status_txt = f"{restantes} restante(s) disponibles"
 
-    return f"""
+    return textwrap.dedent(f"""
     <div style="margin: 0.4rem 0;">
         <div style="display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; color: #cbd5e1;">
             <span>Sesiones: {realizadas} / {totales} ({porcentaje}%)</span>
@@ -457,7 +463,7 @@ def render_session_progress(sesiones_realizadas: int, sesiones_totales: int) -> 
             <div class="session-bar-fill" style="width: {porcentaje}%; background-color: {bar_color};"></div>
         </div>
     </div>
-    """
+    """).strip()
 
 def render_daily_quote_box(quote_data: Dict[str, Any]):
     """Renderiza el Easter Egg diario con las citas de los 80s/90s en el Sidebar."""
@@ -469,7 +475,7 @@ def render_daily_quote_box(quote_data: Dict[str, Any]):
     
     extra = f" ({obra}, {año})" if obra and año else f" ({obra})" if obra else ""
     
-    st.markdown(
+    st_html(
         f"""
         <div class="quote-box">
             <div style="font-size: 0.75rem; font-weight: 800; color: #e9d5ff; letter-spacing: 0.5px; margin-bottom: 4px; display: flex; justify-content: space-between;">
@@ -480,10 +486,10 @@ def render_daily_quote_box(quote_data: Dict[str, Any]):
             <div class="quote-author">— {autor}{extra}</div>
             <div class="quote-tag">{categoria}</div>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
 def render_google_calendar_button(gcal_url: str, label: str = "📅 Google Calendar") -> str:
     """Devuelve el fragmento HTML estilizado para el botón de Google Calendar."""
     return f'<a href="{gcal_url}" target="_blank" class="btn-gcal" title="Agregar a Google Calendar">{label}</a>'
+

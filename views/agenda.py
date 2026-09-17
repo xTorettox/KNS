@@ -32,6 +32,7 @@ from utils.google_calendar import (
     generate_ics_content
 )
 from utils.ui import (
+    st_html,
     render_header,
     render_kpi_card,
     render_status_badge,
@@ -180,14 +181,13 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
     turnos_dia = get_turnos(target_date=target_date)
     
     if show_title:
-        st.markdown(
+        st_html(
             f"""
             <div style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95)); border-left: 5px solid #38bdf8; border-radius: 10px; padding: 12px 16px; margin: 12px 0 16px 0;">
                 <h4 style="margin: 0; color: #f8fafc;">📋 Turnos del {dia_nombre} {target_date_str}</h4>
                 <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 2px;">Total: <b>{len(turnos_dia)} turnos programados</b></div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
     if not turnos_dia:
@@ -216,7 +216,7 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
             badge_pago_html = '<span style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">✓ ABONADO</span>' if estado_pago == "Abonado" else '<span style="background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">⏳ PAGO PENDIENTE</span>'
 
             with st.container():
-                st.markdown(
+                st_html(
                     f"""
                     <div class="kns-card" style="margin-bottom: 6px;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
@@ -237,14 +237,13 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                             </div>
                         </div>
                     </div>
-                    """,
-                    unsafe_allow_html=True
+                    """
                 )
 
                 c_det1, c_det2, c_det3, c_det4, c_det5 = st.columns([1.8, 1.3, 1.3, 1.3, 1.5])
                 
                 with c_det1:
-                    st.markdown(render_session_progress(ses_real, ses_tot), unsafe_allow_html=True)
+                    st_html(render_session_progress(ses_real, ses_tot))
                     if notas:
                         st.caption(f"📝 *Notas:* {notas}")
                     if motivo_ajuste:
@@ -253,16 +252,10 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                 with c_det2:
                     msg_wa = template_recordatorio_turno(p_nombre, target_date_str, h_ini, consultorio=clinic_name, gcal_url=gcal_url_t)
                     wa_url = generate_whatsapp_url(p_tel, msg_wa)
-                    st.markdown(
-                        f'<a href="{wa_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 WhatsApp</a>',
-                        unsafe_allow_html=True
-                    )
+                    st_html(f'<a href="{wa_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 WhatsApp</a>')
 
                 with c_det3:
-                    st.markdown(
-                        f'<a href="{gcal_url_t}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Google Cal</a>',
-                        unsafe_allow_html=True
-                    )
+                    st_html(f'<a href="{gcal_url_t}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Google Cal</a>')
 
                 with c_det4:
                     estados_opciones = ["Pendiente", "Asistió", "Cancelado", "Reprogramado", "Ausente"]
@@ -435,7 +428,7 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
 
             nombres_txt = ", ".join([f"<b>{t.get('paciente_nombre')}</b> ({str(t.get('hora_inicio'))[:5]}-{str(t.get('hora_fin'))[:5]})" for t in pacientes_en_slot]) if pacientes_en_slot else "<i style='color: #64748b;'>Sin turnos</i>"
 
-            st.markdown(
+            st_html(
                 f"""
                 <div style="background: #1e293b; border-left: 5px solid {border_color}; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
                     <div>
@@ -444,8 +437,7 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                     </div>
                     <div>{badge_slot}</div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
 # ==============================================================================
@@ -549,10 +541,7 @@ def render_agenda_view():
                 st.rerun()
 
         with col_m_title:
-            st.markdown(
-                f"<h3 style='text-align: center; margin: 4px 0; color: #38bdf8; font-size: 1.25rem; font-weight: 800;'>🗓️ {MESES_ES[cal_m]} {cal_y}</h3>",
-                unsafe_allow_html=True
-            )
+            st_html(f"<h3 style='text-align: center; margin: 4px 0; color: #38bdf8; font-size: 1.25rem; font-weight: 800;'>🗓️ {MESES_ES[cal_m]} {cal_y}</h3>")
 
         with col_m_next:
             if st.button("Siguiente ▶", use_container_width=True, key="btn_native_m_next"):
@@ -622,10 +611,7 @@ def render_agenda_view():
                 st.rerun()
 
         with col_w_title:
-            st.markdown(
-                f"<h4 style='text-align: center; margin: 4px 0; color: #38bdf8; font-size: 1.1rem;'>Semana: {start_of_week.strftime('%d/%m')} al {end_of_week.strftime('%d/%m')}</h4>",
-                unsafe_allow_html=True
-            )
+            st_html(f"<h4 style='text-align: center; margin: 4px 0; color: #38bdf8; font-size: 1.1rem;'>Semana: {start_of_week.strftime('%d/%m')} al {end_of_week.strftime('%d/%m')}</h4>")
 
         with col_w_next:
             if st.button("Semana Sig. ▶", use_container_width=True, key="btn_native_w_next"):
@@ -676,7 +662,7 @@ def render_agenda_view():
         with col_f_search:
             filtro_nom = st.text_input("🔍 Filtrar por Paciente u Obra Social", placeholder="Ej: Menéndez o OSDE...", key="filtro_15d")
         with col_f_info:
-            st.markdown(f"<div style='margin-top: 28px; font-weight: 700; color: #38bdf8;'>Total: {len(turnos_15)} turnos en 15 días</div>", unsafe_allow_html=True)
+            st_html(f"<div style='margin-top: 28px; font-weight: 700; color: #38bdf8;'>Total: {len(turnos_15)} turnos en 15 días</div>")
 
         if filtro_nom:
             turnos_15 = [t for t in turnos_15 if filtro_nom.lower() in t.get("paciente_nombre", "").lower() or filtro_nom.lower() in t.get("paciente_obra_social", "").lower()]
@@ -721,7 +707,7 @@ def render_agenda_view():
                         wa_msg = template_recordatorio_turno(p_nom, f_formateada, h_ini, consultorio=clinic_name, gcal_url=gcal_url)
                         wa_url = generate_whatsapp_url(p_tel, wa_msg)
 
-                        st.markdown(
+                        st_html(
                             f"""
                             <div class="kns-card" style="margin-bottom: 6px;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -735,14 +721,13 @@ def render_agenda_view():
                                     </div>
                                 </div>
                             </div>
-                            """,
-                            unsafe_allow_html=True
+                            """
                         )
                         c_act1, c_act2, c_act3 = st.columns([1.5, 1.5, 1.5])
                         with c_act1:
-                            st.markdown(f'<a href="{wa_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 WhatsApp</a>', unsafe_allow_html=True)
+                            st_html(f'<a href="{wa_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 WhatsApp</a>')
                         with c_act2:
-                            st.markdown(f'<a href="{gcal_url}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Google Calendar</a>', unsafe_allow_html=True)
+                            st_html(f'<a href="{gcal_url}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Google Calendar</a>')
                         with c_act3:
                             if st.button("👉 Abrir Jornada", key=f"btn_goto_15_{t_id}", use_container_width=True):
                                 try:
@@ -809,13 +794,12 @@ def render_agenda_view():
                 dt_temp = datetime.combine(fecha_turno_sel, hora_inicio_sel) + timedelta(minutes=duracion_sel)
                 hora_fin_calc = dt_temp.time()
 
-                st.markdown(
+                st_html(
                     f"""
                     <div style="background-color: rgba(2, 132, 199, 0.1); border-left: 4px solid #0284c7; padding: 10px; border-radius: 6px; margin: 10px 0;">
                         <b>Resumen:</b> {fecha_turno_sel.strftime('%d/%m/%Y')} | {hora_inicio_sel.strftime('%H:%M')} hs ➔ {hora_fin_calc.strftime('%H:%M')} hs ({duracion_sel} min) | 💵 {'Valor Sesión:' if is_part_ag else 'Coseguro:'} <b>${monto_coseguro_turno:,.2f}</b>
                     </div>
-                    """,
-                    unsafe_allow_html=True
+                    """
                 )
 
                 col_n1, col_n2 = st.columns([2, 1])
@@ -880,10 +864,9 @@ def render_agenda_view():
                                         gcal_url=gcal_url_new
                                     )
                                     url_conf = generate_whatsapp_url(tel_p, wa_conf)
-                                    st.markdown(
+                                    st_html(
                                         f'<a href="{url_conf}" target="_blank" class="btn-wa" style="margin-right: 10px;">📲 Enviar WhatsApp a {nombre_sel}</a>'
-                                        f'<a href="{gcal_url_new}" target="_blank" class="btn-gcal">📅 Añadir a Google Calendar</a>',
-                                        unsafe_allow_html=True
+                                        f'<a href="{gcal_url_new}" target="_blank" class="btn-gcal">📅 Añadir a Google Calendar</a>'
                                     )
                                 st.rerun()
                             else:

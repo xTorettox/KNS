@@ -32,6 +32,7 @@ from utils.whatsapp import (
     template_recordatorio_turno
 )
 from utils.ui import (
+    st_html,
     render_header,
     render_kpi_card,
     render_status_badge,
@@ -241,7 +242,7 @@ def render_pacientes_view():
         afiliado_display = afiliado_act if (afiliado_act and not is_particular) else ("Particular (Sin credencial)" if is_particular else "No registrado")
 
         # Encabezado de la Ficha
-        st.markdown(
+        st_html(
             f"""
             <div class="kns-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
@@ -268,12 +269,11 @@ def render_pacientes_view():
                     {f'<div style="font-size: 0.82rem; color: #94a3b8; margin-top: 6px;"><b>Observaciones:</b> {notas_act}</div>' if notas_act else ''}
                 </div>
             </div>
-            """,
-            unsafe_allow_html=True
+            """
         )
 
         # Barra de progreso y control de sesiones
-        st.markdown(render_session_progress(ses_real_act, ses_tot_act), unsafe_allow_html=True)
+        st_html(render_session_progress(ses_real_act, ses_tot_act))
         
         # Botones de Acción Contextual
         col_wa_p, col_ed_p = st.columns([2, 1])
@@ -286,7 +286,7 @@ def render_pacientes_view():
                 btn_wa_txt = "📲 Contactar por WhatsApp"
             
             wa_link_p = generate_whatsapp_url(tel_act, msg_p)
-            st.markdown(f'<a href="{wa_link_p}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center; margin-bottom: 8px;">{btn_wa_txt}</a>', unsafe_allow_html=True)
+            st_html(f'<a href="{wa_link_p}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center; margin-bottom: 8px;">{btn_wa_txt}</a>')
 
         with col_ed_p:
             with st.popover("⚙️ Modificar Ficha", use_container_width=True):
@@ -383,13 +383,12 @@ def render_pacientes_view():
                 render_kpi_card(lbl_unidad, f"${cos_act:,.2f}", "Por sesión", color="#facc15")
 
             if saldo_pendiente > 0:
-                st.markdown(
+                st_html(
                     f"""
                     <div style="background: rgba(239, 68, 68, 0.15); border-left: 4px solid #ef4444; border-radius: 8px; padding: 10px 14px; margin: 10px 0;">
                         <b style="color: #f87171;">⚠️ Saldo Pendiente:</b> El paciente adeuda <b style="color: #fca5a5;">${saldo_pendiente:,.2f}</b> por el tratamiento o sesiones asistidas.
                     </div>
-                    """,
-                    unsafe_allow_html=True
+                    """
                 )
 
             st.markdown("<div style='margin-top: 10px;'></div>", unsafe_allow_html=True)
@@ -513,7 +512,7 @@ def render_pacientes_view():
 
                     badge_mod_color = "#38bdf8" if p_mod == "Por sesión" else "#a855f7" if p_mod == "Tratamiento completo" else "#f59e0b"
 
-                    st.markdown(
+                    st_html(
                         f"""
                         <div style="background: #1e293b; border-left: 4px solid {badge_mod_color}; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
@@ -534,8 +533,7 @@ def render_pacientes_view():
                                 </div>
                             </div>
                         </div>
-                        """,
-                        unsafe_allow_html=True
+                        """
                     )
                     
                     c_del_p, _ = st.columns([1, 4])
@@ -550,7 +548,7 @@ def render_pacientes_view():
                     msg_resumen_wa = f"Hola {nom_act}, te compartimos el resumen de cobros de tu tratamiento en KNS Kinesiología:\n- Total Abonado: ${total_cobrado:,.2f}\n- Sesiones Cubiertas: {ses_cubiertas}/{ses_tot_act}\n- Saldo Pendiente: ${saldo_pendiente:,.2f}\n¡Muchas gracias!"
                     wa_res_url = generate_whatsapp_url(tel_act, msg_resumen_wa)
                     st.markdown("<div style='margin-top: 8px;'></div>", unsafe_allow_html=True)
-                    st.markdown(f'<a href="{wa_res_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 Enviar Resumen de Pagos por WhatsApp</a>', unsafe_allow_html=True)
+                    st_html(f'<a href="{wa_res_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 Enviar Resumen de Pagos por WhatsApp</a>')
 
         # ==============================================================================
         # PESTAÑA 2: EVOLUCIÓN CLÍNICA
@@ -595,7 +593,7 @@ def render_pacientes_view():
                     t_txt = ev.get("tratamiento_aplicado", "")
                     eva_val = ev.get("escala_dolor_eva")
 
-                    st.markdown(
+                    st_html(
                         f"""
                         <div style="border-left: 3px solid #38bdf8; background: #0f172a; padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;">
                             <div style="display: flex; justify-content: space-between; font-size: 0.82rem; color: #94a3b8; margin-bottom: 4px;">
@@ -607,8 +605,7 @@ def render_pacientes_view():
                             <div style="font-size: 0.9rem; color: #f8fafc;">{n_txt}</div>
                             {f'<div style="font-size: 0.8rem; color: #38bdf8; margin-top: 4px;">🔬 <i>{t_txt}</i></div>' if t_txt else ''}
                         </div>
-                        """,
-                        unsafe_allow_html=True
+                        """
                     )
 
         # ==============================================================================
@@ -694,7 +691,7 @@ def render_pacientes_view():
                     cos_tp = float(tp.get("monto_coseguro", 0) or cos_act)
                     pago_est = tp.get("estado_pago", "Pendiente")
                     
-                    st.markdown(
+                    st_html(
                         f"""
                         <div style="background: #0f172a; padding: 10px 14px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div>
@@ -708,8 +705,7 @@ def render_pacientes_view():
                                 {render_status_badge(est_tp)}
                             </div>
                         </div>
-                        """,
-                        unsafe_allow_html=True
+                        """
                     )
 
         st.markdown("<div style='margin-top: 1.5rem;'></div>", unsafe_allow_html=True)
@@ -786,7 +782,7 @@ def render_pacientes_view():
         badge_os_style = "background: rgba(34,197,94,0.15); color: #4ade80;" if is_part else "background: rgba(56,189,248,0.15); color: #38bdf8;"
 
         with st.container():
-            st.markdown(
+            st_html(
                 f"""
                 <div style="border: 1px solid rgba(255,255,255,0.08); background: #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 6px;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
@@ -807,8 +803,7 @@ def render_pacientes_view():
                         </span>
                     </div>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
             if st.button(f"👤 Ver Ficha de {p_nom}", key=f"btn_sel_{p_id}", type="primary", use_container_width=True):
                 st.session_state.selected_paciente_id = p_id

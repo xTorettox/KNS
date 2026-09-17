@@ -256,28 +256,29 @@ def logout():
 
 def render_login_view():
     """Renderiza una pantalla de inicio de sesión moderna y protegida."""
-    st.markdown(
+    from utils.ui import st_html
+    
+    st_html(
         """
-        <div style="max-width: 440px; margin: 4rem auto 1.5rem auto; text-align: center;">
+        <div style="max-width: 440px; margin: 3.5rem auto 1.2rem auto; text-align: center;">
             <div style="font-size: 3.5rem; margin-bottom: 0.2rem;">🩺</div>
             <h1 style="color: #38bdf8; font-weight: 800; font-size: 2.2rem; margin: 0; letter-spacing: -0.5px;">KNS</h1>
             <p style="color: #94a3b8; font-size: 0.95rem; font-weight: 600; margin-top: 2px;">SISTEMA DE GESTIÓN EN KINESIOLOGÍA</p>
         </div>
-        """,
-        unsafe_allow_html=True
+        """
     )
 
     col_l1, col_center, col_l2 = st.columns([1, 1.4, 1])
 
     with col_center:
-        with st.container():
-            st.markdown(
+        with st.container(border=True):
+            st_html(
                 """
-                <div style="background: linear-gradient(145deg, #1e293b, #0f172a); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
-                    <h3 style="color: #f8fafc; font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; text-align: center;">Iniciar Sesión</h3>
-                    <p style="color: #64748b; font-size: 0.85rem; text-align: center; margin-bottom: 20px;">Ingresa tus credenciales autorizadas</p>
-                """,
-                unsafe_allow_html=True
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <h3 style="color: #f8fafc; font-size: 1.25rem; font-weight: 700; margin: 0;">Iniciar Sesión</h3>
+                    <p style="color: #64748b; font-size: 0.85rem; margin-top: 4px;">Ingresa tus credenciales autorizadas</p>
+                </div>
+                """
             )
 
             with st.form("login_form", clear_on_submit=False):
@@ -303,14 +304,11 @@ def render_login_view():
                         else:
                             st.error("Usuario o contraseña incorrectos.")
 
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            st.markdown(
-                """
-                <div style="text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem;">
-                    Acceso protegido para profesionales y administración • KNS v1.0
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+        st_html(
+            """
+            <div style="text-align: center; margin-top: 1.5rem; color: #475569; font-size: 0.75rem;">
+                Acceso protegido para profesionales y administración • KNS v1.0
+            </div>
+            """
+        )
 

@@ -23,7 +23,7 @@ from utils.auth import (
     get_current_user
 )
 from utils.quotes import load_all_quotes, get_random_quote
-from utils.ui import render_header, render_kpi_card, render_daily_quote_box
+from utils.ui import render_header, render_kpi_card, render_daily_quote_box, st_html
 
 def render_configuracion_view():
     """Renderiza la vista de configuración y administración."""
@@ -56,26 +56,21 @@ def render_configuracion_view():
 
         with col_logo_prev:
             st.markdown("##### Vista Previa Actual")
-            st.markdown(
-                """
-                <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center;">
-                """,
-                unsafe_allow_html=True
-            )
-            
             custom_bytes = current_config.get("custom_logo_bytes")
             if custom_bytes:
                 st.image(custom_bytes, width=120)
+                icon_markup = ""
             else:
-                st.markdown(f"<div style='font-size: 3rem; margin-bottom: 4px;'>{current_config.get('logo_icon', '🩺')}</div>", unsafe_allow_html=True)
-            
-            st.markdown(
+                icon_markup = f"<div style='font-size: 3rem; margin-bottom: 4px;'>{current_config.get('logo_icon', '🩺')}</div>"
+
+            st_html(
                 f"""
+                <div style="background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center;">
+                    {icon_markup}
                     <h3 style="margin: 0; color: #38bdf8; font-weight: 800;">{current_config.get('clinic_name', 'KNS')}</h3>
                     <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; font-weight: 600;">{current_config.get('subtitle', 'KINESIOLOGÍA')}</p>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
 
         with col_logo_form:
@@ -162,7 +157,7 @@ def render_configuracion_view():
             rol_badge = '<span style="background: rgba(2,132,199,0.2); color: #38bdf8; font-weight: bold; font-size: 0.78rem; padding: 2px 8px; border-radius: 9999px;">ADMINISTRADOR</span>' if u_rol == "admin" else '<span style="background: rgba(34,197,94,0.2); color: #4ade80; font-weight: bold; font-size: 0.78rem; padding: 2px 8px; border-radius: 9999px;">KINESIÓLOGO/A</span>'
 
             with st.container():
-                st.markdown(
+                st_html(
                     f"""
                     <div class="kns-card" style="padding: 12px 16px; margin-bottom: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
@@ -175,8 +170,7 @@ def render_configuracion_view():
                             </div>
                         </div>
                     </div>
-                    """,
-                    unsafe_allow_html=True
+                    """
                 )
 
                 # Popover de edición de usuario
@@ -295,13 +289,12 @@ def render_configuracion_view():
 
         st.markdown(f"**Total de frases disponibles:** {len(all_quotes)}")
         for q in all_quotes:
-            st.markdown(
+            st_html(
                 f"""
                 <div style="background: #1e293b; border-left: 3px solid #c084fc; padding: 8px 12px; border-radius: 6px; margin-bottom: 6px;">
                     <b style="color: #f3e8ff;">#{q.get('id')} "{q.get('frase')}"</b><br/>
                     <span style="font-size: 0.8rem; color: #cbd5e1;">— {q.get('autor')} ({q.get('obra')}, {q.get('año')})</span>
                     <span style="font-size: 0.75rem; background: rgba(192,132,252,0.2); color: #e9d5ff; padding: 2px 6px; border-radius: 4px; float: right;">{q.get('categoria')}</span>
                 </div>
-                """,
-                unsafe_allow_html=True
+                """
             )
