@@ -240,6 +240,7 @@ def render_pacientes_view():
 
         fn_display = fn_obj.strftime("%d/%m/%Y") if fn_obj else "No informada"
         afiliado_display = afiliado_act if (afiliado_act and not is_particular) else ("Particular (Sin credencial)" if is_particular else "No registrado")
+        obs_html = f'<div style="font-size: 0.82rem; color: #94a3b8; margin-top: 6px;"><b>Observaciones:</b> {notas_act}</div>' if notas_act else ""
 
         # Encabezado de la Ficha
         st_html(
@@ -266,7 +267,7 @@ def render_pacientes_view():
                 <div style="margin-top: 12px; font-size: 0.9rem; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 8px;">
                     <b style="color: #94a3b8;">🩺 Diagnóstico / Patología:</b><br/>
                     <span style="color: #f1f5f9;">{pat_act}</span>
-                    {f'<div style="font-size: 0.82rem; color: #94a3b8; margin-top: 6px;"><b>Observaciones:</b> {notas_act}</div>' if notas_act else ''}
+                    {obs_html}
                 </div>
             </div>
             """
@@ -780,6 +781,7 @@ def render_pacientes_view():
         
         color_ses = "#10b981" if p_rest > 2 else "#f59e0b" if p_rest > 0 else "#ef4444"
         badge_os_style = "background: rgba(34,197,94,0.15); color: #4ade80;" if is_part else "background: rgba(56,189,248,0.15); color: #38bdf8;"
+        afiliado_card_html = f" | 🪪 Afiliado: {p_af}" if p_af and not is_part else ""
 
         with st.container():
             st_html(
@@ -794,8 +796,7 @@ def render_pacientes_view():
                                 </span>
                             </div>
                             <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 4px;">
-                                📞 {p_tel or 'S/Tel'} | 💵 {'Valor Sesión:' if is_part else 'Coseguro:'} <b style="color: #4ade80;">${p_cos:,.2f}</b>
-                                {f' | 🪪 Afiliado: {p_af}' if p_af and not is_part else ''}
+                                📞 {p_tel or 'S/Tel'} | 💵 {'Valor Sesión:' if is_part else 'Coseguro:'} <b style="color: #4ade80;">${p_cos:,.2f}</b>{afiliado_card_html}
                             </div>
                         </div>
                         <span style="font-size: 0.8rem; font-weight: 700; color: {color_ses}; background: rgba(0,0,0,0.35); padding: 4px 10px; border-radius: 8px;">

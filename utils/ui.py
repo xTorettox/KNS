@@ -392,8 +392,11 @@ def st_html(html_str: str):
     """Renderiza HTML en Streamlit asegurando que ninguna línea tenga indentación que active bloques de código de Markdown."""
     if not html_str:
         return
-    clean_html = textwrap.dedent(html_str).strip()
-    st.markdown(clean_html, unsafe_allow_html=True)
+    clean_html = "\n".join(line.strip() for line in str(html_str).splitlines() if line.strip())
+    try:
+        st.html(clean_html)
+    except (AttributeError, Exception):
+        st.markdown(clean_html, unsafe_allow_html=True)
 
 def render_header(title: str, subtitle: Optional[str] = None, icon: str = "🩺"):
     """Renderiza un encabezado limpio y moderno para cada vista."""
