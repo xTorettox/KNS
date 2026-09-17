@@ -17,7 +17,8 @@ from utils.supabase_client import (
     delete_turno,
     check_turnos_overlap,
     create_evolucion,
-    get_app_config
+    get_app_config,
+    create_pago
 )
 from utils.whatsapp import (
     generate_whatsapp_url,
@@ -197,10 +198,13 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
             p_nombre = turno.get("paciente_nombre", "Paciente")
             p_tel = turno.get("paciente_telefono", "")
             p_os = turno.get("paciente_obra_social", "Particular")
+            is_part = (str(p_os).lower().strip() == "particular")
             h_ini = str(turno.get("hora_inicio", ""))[:5]
             h_fin = str(turno.get("hora_fin", ""))[:5]
             dur = turno.get("duracion_minutos", 45)
             estado = turno.get("estado", "Pendiente")
+            monto_cos = float(turno.get("monto_coseguro", 0) or turno.get("paciente_monto_coseguro_default", 0) or 0)
+            estado_pago = turno.get("estado_pago", "Pendiente")
             notas = turno.get("notas", "")
             motivo_ajuste = turno.get("motivo_ajuste", "")
             ses_real = turno.get("paciente_sesiones_realizadas", 0)
@@ -208,6 +212,8 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
             p_id = str(turno.get("paciente_id", ""))
 
             gcal_url_t = generate_turno_google_url(turno, clinic_name=clinic_name)
+
+            badge_pago_html = '<span style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">✓ ABONADO</span>' if estado_pago == "Abonado" else '<span style="background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">⏳ PAGO PENDIENTE</span>'
 
             with st.container():
                 st.markdown(
@@ -218,7 +224,13 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                                 <span style="font-size: 1.15rem; font-weight: 700; color: #f8fafc;">⏰ {h_ini} - {h_fin} hs</span>
                                 <span style="font-size: 0.85rem; color: #94a3b8; margin-left: 8px;">({dur} min)</span>
                                 <h4 style="margin: 4px 0 2px 0; color: #38bdf8;">👤 {p_nombre}</h4>
-                                <span style="font-size: 0.85rem; color: #cbd5e1;">🏥 Obra Social: <b>{p_os or 'Particular'}</b></span>
+                                <div style="font-size: 0.85rem; color: #cbd5e1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                    <span>{'👤 Particular' if is_part else f'🏥 {p_os}'}</span>
+                                    <span>•</span>
+                                    <span>💵 {'Valor Sesión:' if is_part else 'Coseguro:'} <b style="color: #4ade80;">${monto_cos:,.2f}</b></span>
+                                    <span>•</span>
+                                    {badge_pago_html}
+                                </div>
                             </div>
                             <div>
                                 {render_status_badge(estado)}
@@ -229,7 +241,7 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                     unsafe_allow_html=True
                 )
 
-                c_det1, c_det2, c_det3, c_det4, c_det5 = st.columns([2, 1.4, 1.4, 1.3, 1.3])
+                c_det1, c_det2, c_det3, c_det4, c_det5 = st.columns([1.8, 1.3, 1.3, 1.3, 1.5])
                 
                 with c_det1:
                     st.markdown(render_session_progress(ses_real, ses_tot), unsafe_allow_html=True)
@@ -271,43 +283,85 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                             st.error(msg)
 
                 with c_det5:
-                    with st.popover("⚙️ Ajustar", use_container_width=True):
-                        st.markdown("##### Ajustar Horario o Notas")
-                        curr_h_ini_obj = datetime.strptime(h_ini, "%H:%M").time()
-                        nuevo_h_ini = st.time_input("Nueva Hora Inicio", value=curr_h_ini_obj, key=f"grid_edit_hi_{t_id}")
-                        
-                        dur_opts = [30, 45, 60]
-                        idx_dur = dur_opts.index(dur) if dur in dur_opts else 1
-                        nueva_dur = st.selectbox("Duración (min)", dur_opts, index=idx_dur, key=f"grid_edit_dur_{t_id}")
-                        
-                        dummy_dt = datetime.combine(date.today(), nuevo_h_ini) + timedelta(minutes=nueva_dur)
-                        nuevo_h_fin = dummy_dt.time()
-                        st.info(f"Hora de fin: **{nuevo_h_fin.strftime('%H:%M')} hs**")
-                        
-                        nuevo_motivo = st.text_input("Motivo del ajuste", value=motivo_ajuste, placeholder="Ej: Llegó 15 min tarde", key=f"grid_edit_mot_{t_id}")
-                        nuevas_notas = st.text_area("Notas del turno", value=notas, key=f"grid_edit_not_{t_id}")
-                        
-                        col_save, col_del = st.columns(2)
-                        with col_save:
-                            if st.button("Guardar", key=f"grid_btn_save_{t_id}", type="primary", use_container_width=True):
-                                ok, msg = update_turno(t_id, {
-                                    "hora_inicio": nuevo_h_ini,
-                                    "hora_fin": nuevo_h_fin,
-                                    "duracion_minutos": nueva_dur,
-                                    "motivo_ajuste": nuevo_motivo,
-                                    "notas": nuevas_notas
-                                })
-                                if ok:
-                                    st.success("Turno actualizado.")
+                    col_pop1, col_pop2 = st.columns(2)
+                    with col_pop1:
+                        # POPUP / POPOVER COBRO RÁPIDO
+                        lbl_btn_cobro = "✅ Cobrado" if estado_pago == "Abonado" else "💵 Cobrar"
+                        with st.popover(lbl_btn_cobro, use_container_width=True):
+                            st.markdown("###### Registrar Cobro de Sesión")
+                            with st.form(f"quick_pay_form_{t_id}"):
+                                q_monto = st.number_input(
+                                    "Monto a Cobrar ($)",
+                                    min_value=0.0,
+                                    step=500.0,
+                                    value=monto_cos if monto_cos > 0 else 4000.0
+                                )
+                                q_metodo = st.selectbox("Método", ["Efectivo", "Transferencia / MP", "Tarjeta Débito", "Tarjeta Crédito", "Otro"], key=f"q_met_{t_id}")
+                                q_concepto = st.text_input("Concepto", value=f"{'Valor Consulta Particular' if is_part else 'Coseguro Sesión'} ({target_date_str})", key=f"q_con_{t_id}")
+                                
+                                btn_quick_pay = st.form_submit_button("Confirmar Cobro", type="primary", use_container_width=True)
+                                if btn_quick_pay:
+                                    ok_qp, msg_qp, _ = create_pago({
+                                        "paciente_id": p_id,
+                                        "turno_id": t_id,
+                                        "fecha_pago": target_date.isoformat(),
+                                        "monto": float(q_monto),
+                                        "concepto": q_concepto.strip(),
+                                        "modalidad": "Por sesión",
+                                        "metodo_pago": q_metodo,
+                                        "sesiones_cubiertas": 1,
+                                        "notas": f"Cobro registrado desde agenda del día {target_date_str}"
+                                    })
+                                    if ok_qp:
+                                        update_turno(t_id, {"estado_pago": "Abonado", "monto_coseguro": float(q_monto)})
+                                        st.success("¡Cobro registrado exitosamente!")
+                                        st.rerun()
+                                    else:
+                                        st.error(msg_qp)
+
+                    with col_pop2:
+                        with st.popover("⚙️ Ajustar", use_container_width=True):
+                            st.markdown("##### Ajustar Horario, Coseguro o Notas")
+                            curr_h_ini_obj = datetime.strptime(h_ini, "%H:%M").time()
+                            nuevo_h_ini = st.time_input("Nueva Hora Inicio", value=curr_h_ini_obj, key=f"grid_edit_hi_{t_id}")
+                            
+                            dur_opts = [30, 45, 60]
+                            idx_dur = dur_opts.index(dur) if dur in dur_opts else 1
+                            nueva_dur = st.selectbox("Duración (min)", dur_opts, index=idx_dur, key=f"grid_edit_dur_{t_id}")
+                            
+                            dummy_dt = datetime.combine(date.today(), nuevo_h_ini) + timedelta(minutes=nueva_dur)
+                            nuevo_h_fin = dummy_dt.time()
+                            st.info(f"Hora de fin: **{nuevo_h_fin.strftime('%H:%M')} hs**")
+                            
+                            edit_monto_cos = st.number_input("Monto Coseguro / Sesión ($)", min_value=0.0, step=500.0, value=monto_cos, key=f"grid_edit_cos_{t_id}")
+                            edit_estado_pago = st.selectbox("Estado del Pago", ["Pendiente", "Abonado", "Parcial", "Exento"], index=["Pendiente", "Abonado", "Parcial", "Exento"].index(estado_pago) if estado_pago in ["Pendiente", "Abonado", "Parcial", "Exento"] else 0, key=f"grid_edit_ep_{t_id}")
+                            
+                            nuevo_motivo = st.text_input("Motivo del ajuste", value=motivo_ajuste, placeholder="Ej: Llegó 15 min tarde", key=f"grid_edit_mot_{t_id}")
+                            nuevas_notas = st.text_area("Notas del turno", value=notas, key=f"grid_edit_not_{t_id}")
+                            
+                            col_save, col_del = st.columns(2)
+                            with col_save:
+                                if st.button("Guardar", key=f"grid_btn_save_{t_id}", type="primary", use_container_width=True):
+                                    ok, msg = update_turno(t_id, {
+                                        "hora_inicio": nuevo_h_ini,
+                                        "hora_fin": nuevo_h_fin,
+                                        "duracion_minutos": nueva_dur,
+                                        "monto_coseguro": float(edit_monto_cos),
+                                        "estado_pago": edit_estado_pago,
+                                        "motivo_ajuste": nuevo_motivo,
+                                        "notas": nuevas_notas
+                                    })
+                                    if ok:
+                                        st.success("Turno actualizado.")
+                                        st.rerun()
+                                    else:
+                                        st.error(msg)
+                            
+                            with col_del:
+                                if st.button("Eliminar", key=f"grid_btn_del_{t_id}", type="secondary", use_container_width=True):
+                                    delete_turno(t_id)
+                                    st.warning("Turno eliminado.")
                                     st.rerun()
-                                else:
-                                    st.error(msg)
-                        
-                        with col_del:
-                            if st.button("Eliminar", key=f"grid_btn_del_{t_id}", type="secondary", use_container_width=True):
-                                delete_turno(t_id)
-                                st.warning("Turno eliminado.")
-                                st.rerun()
 
                 if estado == "Asistió":
                     with st.expander(f"🩺 Registrar Evolución de la Sesión para {p_nombre}"):
@@ -721,19 +775,36 @@ def render_agenda_view():
                     paciente_id_sel = paciente_options[nombre_sel]
 
                 paciente_obj = next((p for p in pacientes_list if p["id"] == paciente_id_sel), {})
+                p_os_actual = paciente_obj.get('obra_social', 'Particular') if paciente_obj else 'Particular'
+                p_cos_default = float(paciente_obj.get('monto_coseguro_default', 0) or 0) if paciente_obj else 0.0
+                is_part_ag = (str(p_os_actual).lower().strip() == 'particular')
+
                 if paciente_obj:
                     ses_r = paciente_obj.get("sesiones_realizadas", 0)
                     ses_t = paciente_obj.get("sesiones_totales", 10)
                     restantes = max(0, ses_t - ses_r)
-                    st.markdown(f"📋 **Obra Social:** {paciente_obj.get('obra_social', 'Particular')} | **Sesiones Restantes:** {restantes} de {ses_t}")
+                    st.markdown(
+                        f"📋 **Cobertura:** {'👤 Particular' if is_part_ag else f'🏥 {p_os_actual}'} | "
+                        f"💵 **{'Valor Sesión:' if is_part_ag else 'Coseguro:'}** ${p_cos_default:,.2f} | "
+                        f"🎟️ **Sesiones Restantes:** {restantes} de {ses_t}"
+                    )
                     if restantes <= 0:
                         st.error("⚠️ Este paciente ha completado todas sus sesiones autorizadas. Solicitar nueva orden.")
 
-                col_h1, col_h2 = st.columns(2)
+                col_h1, col_h2, col_cos = st.columns([1.2, 1.2, 1.6])
                 with col_h1:
                     hora_inicio_sel = st.time_input("Hora de Inicio", value=time(8, 30))
                 with col_h2:
                     duracion_sel = st.selectbox("Duración de la Sesión", [30, 45, 60], index=1)
+                with col_cos:
+                    lbl_monto_ag = "Valor Sesión ($)" if is_part_ag else "Monto Coseguro ($)"
+                    monto_coseguro_turno = st.number_input(
+                        lbl_monto_ag,
+                        min_value=0.0,
+                        step=500.0,
+                        value=p_cos_default,
+                        help="Monto de cobro manual para esta sesión."
+                    )
                 
                 dt_temp = datetime.combine(fecha_turno_sel, hora_inicio_sel) + timedelta(minutes=duracion_sel)
                 hora_fin_calc = dt_temp.time()
@@ -741,7 +812,7 @@ def render_agenda_view():
                 st.markdown(
                     f"""
                     <div style="background-color: rgba(2, 132, 199, 0.1); border-left: 4px solid #0284c7; padding: 10px; border-radius: 6px; margin: 10px 0;">
-                        <b>Resumen:</b> {fecha_turno_sel.strftime('%d/%m/%Y')} | {hora_inicio_sel.strftime('%H:%M')} hs ➔ {hora_fin_calc.strftime('%H:%M')} hs ({duracion_sel} min)
+                        <b>Resumen:</b> {fecha_turno_sel.strftime('%d/%m/%Y')} | {hora_inicio_sel.strftime('%H:%M')} hs ➔ {hora_fin_calc.strftime('%H:%M')} hs ({duracion_sel} min) | 💵 {'Valor Sesión:' if is_part_ag else 'Coseguro:'} <b>${monto_coseguro_turno:,.2f}</b>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -778,6 +849,8 @@ def render_agenda_view():
                                 "hora_fin": hora_fin_calc,
                                 "duracion_minutos": duracion_sel,
                                 "estado": turno_estado_ini,
+                                "monto_coseguro": float(monto_coseguro_turno),
+                                "estado_pago": "Pendiente",
                                 "notas": turno_notas
                             })
 

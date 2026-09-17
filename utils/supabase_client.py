@@ -124,9 +124,12 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
                 "id": "a1111111-1111-1111-1111-111111111111",
                 "nombre_completo": "Carlos Menéndez",
                 "dni": "28456123",
+                "fecha_nacimiento": "1980-05-14",
                 "edad": 46,
                 "telefono": "+5491144445555",
                 "obra_social": "OSDE 210",
+                "numero_afiliado": "0210-482910-01",
+                "monto_coseguro_default": 3500.0,
                 "patologia": "Lumbalgia mecánica con irradiación a miembro inferior derecho",
                 "sesiones_totales": 10,
                 "sesiones_realizadas": 3,
@@ -138,9 +141,12 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
                 "id": "a2222222-2222-2222-2222-222222222222",
                 "nombre_completo": "Florencia Varela",
                 "dni": "34123890",
+                "fecha_nacimiento": "1994-08-22",
                 "edad": 32,
                 "telefono": "+5491155556666",
                 "obra_social": "Swiss Medical",
+                "numero_afiliado": "SM-9831204",
+                "monto_coseguro_default": 4000.0,
                 "patologia": "Tendinopatía del manguito rotador derecho",
                 "sesiones_totales": 10,
                 "sesiones_realizadas": 5,
@@ -152,9 +158,12 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
                 "id": "a3333333-3333-3333-3333-333333333333",
                 "nombre_completo": "Esteban Lamponne",
                 "dni": "25890432",
+                "fecha_nacimiento": "1976-11-03",
                 "edad": 50,
                 "telefono": "+5491166667777",
-                "obra_social": "Galeno Silver",
+                "obra_social": "Particular",
+                "numero_afiliado": "",
+                "monto_coseguro_default": 12000.0,
                 "patologia": "Esguince de tobillo grado II (LPAA)",
                 "sesiones_totales": 8,
                 "sesiones_realizadas": 1,
@@ -172,6 +181,8 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
                 "hora_fin": "09:15:00",
                 "duracion_minutos": 45,
                 "estado": "Pendiente",
+                "monto_coseguro": 3500.0,
+                "estado_pago": "Pendiente",
                 "motivo_ajuste": None,
                 "notas": "Magneto + ejercicios lumbo-pélvicos",
                 "created_at": datetime.now().isoformat()
@@ -184,6 +195,8 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
                 "hora_fin": "09:45:00",
                 "duracion_minutos": 45,
                 "estado": "Pendiente",
+                "monto_coseguro": 4000.0,
+                "estado_pago": "Abonado",
                 "motivo_ajuste": None,
                 "notas": "Ultrasonido + movilidad escapulotorácica",
                 "created_at": datetime.now().isoformat()
@@ -196,8 +209,54 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
                 "hora_fin": "10:30:00",
                 "duracion_minutos": 30,
                 "estado": "Pendiente",
+                "monto_coseguro": 12000.0,
+                "estado_pago": "Pendiente",
                 "motivo_ajuste": None,
                 "notas": "Crioterapia + propiocepción en bosu",
+                "created_at": datetime.now().isoformat()
+            }
+        ],
+        "pagos": [
+            {
+                "id": "d1111111-1111-1111-1111-111111111111",
+                "paciente_id": "a1111111-1111-1111-1111-111111111111",
+                "turno_id": None,
+                "fecha_pago": today_str,
+                "monto": 3500.0,
+                "monto_total_esperado": None,
+                "concepto": "Coseguro Sesión 1",
+                "modalidad": "Por sesión",
+                "metodo_pago": "Efectivo",
+                "sesiones_cubiertas": 1,
+                "notas": "Coseguro primera sesión",
+                "created_at": datetime.now().isoformat()
+            },
+            {
+                "id": "d2222222-2222-2222-2222-222222222222",
+                "paciente_id": "a2222222-2222-2222-2222-222222222222",
+                "turno_id": None,
+                "fecha_pago": today_str,
+                "monto": 40000.0,
+                "monto_total_esperado": 40000.0,
+                "concepto": "Tratamiento Completo 10 Sesiones",
+                "modalidad": "Tratamiento completo",
+                "metodo_pago": "Transferencia / MP",
+                "sesiones_cubiertas": 10,
+                "notas": "Abonó paquete completo de 10 coseguros juntos",
+                "created_at": datetime.now().isoformat()
+            },
+            {
+                "id": "d3333333-3333-3333-3333-333333333333",
+                "paciente_id": "a3333333-3333-3333-3333-333333333333",
+                "turno_id": None,
+                "fecha_pago": today_str,
+                "monto": 30000.0,
+                "monto_total_esperado": 96000.0,
+                "concepto": "Seña / Pago Parcial Tratamiento Particular",
+                "modalidad": "Pago parcial / Seña",
+                "metodo_pago": "Transferencia / MP",
+                "sesiones_cubiertas": 3,
+                "notas": "Dejó seña inicial de $30.000 de un total de $96.000 por 8 sesiones particulares",
                 "created_at": datetime.now().isoformat()
             }
         ],
@@ -220,6 +279,9 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
         if hasattr(st, "session_state"):
             if "local_db" not in st.session_state:
                 st.session_state.local_db = default_data
+            else:
+                # Asegurar que existan claves nuevas en session_state previo
+                st.session_state.local_db.setdefault("pagos", default_data["pagos"])
             return st.session_state.local_db
     except Exception:
         pass
@@ -233,7 +295,10 @@ def _get_local_store() -> Dict[str, List[Dict[str, Any]]]:
 # ==============================================================================
 
 def get_pacientes(activo_only: bool = False, query: str = "") -> List[Dict[str, Any]]:
-    """Obtiene la lista de pacientes desde base de datos o fallback local."""
+    """Obtiene la lista de pacientes combinando base de datos y fallback local."""
+    pacientes_map: Dict[str, Dict[str, Any]] = {}
+    
+    # 1. Cargar desde base de datos remota si está disponible
     client = init_supabase_client()
     if client:
         try:
@@ -241,57 +306,71 @@ def get_pacientes(activo_only: bool = False, query: str = "") -> List[Dict[str, 
             if activo_only:
                 req = req.eq("activo", True)
             res = req.execute()
-            pacientes = res.data if res.data else []
-            if query:
-                q = query.lower()
-                pacientes = [p for p in pacientes if q in str(p.get("nombre_completo", "")).lower() or q in str(p.get("dni", "")).lower() or q in str(p.get("obra_social", "")).lower()]
-            return pacientes
+            if res.data:
+                for p in res.data:
+                    pacientes_map[str(p["id"])] = dict(p)
         except Exception:
             pass
 
+    # 2. Combinar/complementar con almacenamiento local
     store = _get_local_store()
-    pacientes = list(store["pacientes"])
+    for p in store.get("pacientes", []):
+        p_id = str(p.get("id"))
+        if p_id in pacientes_map:
+            for k, v in p.items():
+                if k not in pacientes_map[p_id] or pacientes_map[p_id][k] is None:
+                    pacientes_map[p_id][k] = v
+        else:
+            if not activo_only or p.get("activo", True):
+                pacientes_map[p_id] = dict(p)
+
+    pacientes = list(pacientes_map.values())
     if activo_only:
         pacientes = [p for p in pacientes if p.get("activo", True)]
     if query:
         q = query.lower()
-        pacientes = [p for p in pacientes if q in str(p.get("nombre_completo", "")).lower() or q in str(p.get("dni", "")).lower() or q in str(p.get("obra_social", "")).lower()]
+        pacientes = [
+            p for p in pacientes
+            if q in str(p.get("nombre_completo", "")).lower()
+            or q in str(p.get("dni", "")).lower()
+            or q in str(p.get("obra_social", "")).lower()
+            or q in str(p.get("numero_afiliado", "")).lower()
+        ]
     return sorted(pacientes, key=lambda x: x.get("nombre_completo", ""))
 
 def get_paciente_by_id(paciente_id: str) -> Optional[Dict[str, Any]]:
-    """Busca un paciente específico por su ID."""
+    """Busca un paciente específico por su ID en Supabase y almacenamiento local."""
     if not paciente_id:
         return None
+        
+    store = _get_local_store()
+    local_p = None
+    for p in store.get("pacientes", []):
+        if str(p.get("id")) == str(paciente_id):
+            local_p = dict(p)
+            break
+
     client = init_supabase_client()
     if client:
         try:
             res = client.table("pacientes").select("*").eq("id", str(paciente_id)).limit(1).execute()
-            if res.data:
-                return res.data[0]
+            if res.data and len(res.data) > 0:
+                remote_p = dict(res.data[0])
+                if local_p:
+                    for k, v in local_p.items():
+                        if k not in remote_p or remote_p[k] is None:
+                            remote_p[k] = v
+                return remote_p
         except Exception:
             pass
 
-    store = _get_local_store()
-    for p in store["pacientes"]:
-        if str(p.get("id")) == str(paciente_id):
-            return p
-    return None
+    return local_p
 
 def create_paciente(paciente_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
     """Crea un nuevo paciente en el sistema."""
     if not paciente_data.get("nombre_completo"):
         return False, "El nombre y apellido son obligatorios.", None
 
-    client = init_supabase_client()
-    if client:
-        try:
-            res = client.table("pacientes").insert(paciente_data).execute()
-            if res.data:
-                return True, "Paciente registrado exitosamente.", res.data[0]
-        except Exception as e:
-            print(f"Error creando paciente: {e}")
-
-    # Fallback local
     store = _get_local_store()
     new_p = dict(paciente_data)
     if "id" not in new_p or not new_p["id"]:
@@ -299,7 +378,39 @@ def create_paciente(paciente_data: Dict[str, Any]) -> Tuple[bool, str, Optional[
     new_p.setdefault("created_at", datetime.now().isoformat())
     new_p.setdefault("sesiones_realizadas", 0)
     new_p.setdefault("activo", True)
-    store["pacientes"].append(new_p)
+
+    client = init_supabase_client()
+    if client:
+        try:
+            res = client.table("pacientes").insert(new_p).execute()
+            if res.data:
+                created_row = dict(res.data[0])
+                for k, v in new_p.items():
+                    created_row.setdefault(k, v)
+                store.setdefault("pacientes", []).append(created_row)
+                return True, "Paciente registrado exitosamente.", created_row
+        except Exception as e:
+            # Si falló por alguna columna que falta en Supabase remoto, intentar insertar datos base
+            try:
+                base_payload = {
+                    "id": new_p["id"],
+                    "nombre_completo": new_p.get("nombre_completo"),
+                    "dni": new_p.get("dni"),
+                    "edad": new_p.get("edad"),
+                    "telefono": new_p.get("telefono"),
+                    "obra_social": new_p.get("obra_social"),
+                    "patologia": new_p.get("patologia"),
+                    "sesiones_totales": new_p.get("sesiones_totales", 10),
+                    "sesiones_realizadas": new_p.get("sesiones_realizadas", 0),
+                    "activo": new_p.get("activo", True),
+                    "notas_generales": new_p.get("notas_generales")
+                }
+                client.table("pacientes").insert(base_payload).execute()
+            except Exception:
+                pass
+
+    # Guardar en local store
+    store.setdefault("pacientes", []).append(new_p)
     return True, "Paciente registrado exitosamente.", new_p
 
 def update_paciente(paciente_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
@@ -335,6 +446,7 @@ def delete_paciente(paciente_id: str) -> Tuple[bool, str]:
     store["pacientes"] = [p for p in store["pacientes"] if str(p.get("id")) != str(paciente_id)]
     store["turnos"] = [t for t in store["turnos"] if str(t.get("paciente_id")) != str(paciente_id)]
     store["evoluciones"] = [e for e in store["evoluciones"] if str(e.get("paciente_id")) != str(paciente_id)]
+    store["pagos"] = [p for p in store.get("pagos", []) if str(p.get("paciente_id")) != str(paciente_id)]
     return True, "Paciente eliminado correctamente."
 
 # ==============================================================================
@@ -347,11 +459,13 @@ def get_turnos(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None
 ) -> List[Dict[str, Any]]:
-    """Obtiene los turnos filtrados por fecha puntual, rango de fechas o paciente con datos del paciente."""
+    """Obtiene los turnos filtrados combinando base de datos y fallback local."""
+    turnos_map: Dict[str, Dict[str, Any]] = {}
+    
     client = init_supabase_client()
     if client:
         try:
-            req = client.table("turnos").select("*, pacientes(id, nombre_completo, telefono, obra_social, sesiones_totales, sesiones_realizadas)").order("fecha").order("hora_inicio")
+            req = client.table("turnos").select("*, pacientes(id, nombre_completo, telefono, obra_social, numero_afiliado, fecha_nacimiento, monto_coseguro_default, sesiones_totales, sesiones_realizadas)").order("fecha").order("hora_inicio")
             if target_date:
                 req = req.eq("fecha", target_date.isoformat())
             if start_date:
@@ -362,42 +476,54 @@ def get_turnos(
                 req = req.eq("paciente_id", str(paciente_id))
             res = req.execute()
             if res.data is not None:
-                turnos = []
                 for t in res.data:
                     p_info = t.get("pacientes") or {}
                     t["paciente_nombre"] = p_info.get("nombre_completo", "Paciente Desconocido")
                     t["paciente_telefono"] = p_info.get("telefono", "")
-                    t["paciente_obra_social"] = p_info.get("obra_social", "")
+                    t["paciente_obra_social"] = p_info.get("obra_social", "Particular")
+                    t["paciente_numero_afiliado"] = p_info.get("numero_afiliado", "")
+                    t["paciente_fecha_nacimiento"] = p_info.get("fecha_nacimiento", None)
+                    t["paciente_monto_coseguro_default"] = float(p_info.get("monto_coseguro_default", 0) or 0)
                     t["paciente_sesiones_totales"] = p_info.get("sesiones_totales", 10)
                     t["paciente_sesiones_realizadas"] = p_info.get("sesiones_realizadas", 0)
-                    turnos.append(t)
-                return turnos
+                    t.setdefault("monto_coseguro", float(p_info.get("monto_coseguro_default", 0) or 0))
+                    t.setdefault("estado_pago", "Pendiente")
+                    turnos_map[str(t["id"])] = t
         except Exception:
             pass
 
     store = _get_local_store()
-    turnos = list(store["turnos"])
+    pacientes_store_map = {str(p["id"]): p for p in store.get("pacientes", [])}
+    for t in store.get("turnos", []):
+        t_id = str(t.get("id"))
+        if t_id not in turnos_map:
+            p = pacientes_store_map.get(str(t.get("paciente_id")), {})
+            t_copy = dict(t)
+            t_copy["paciente_nombre"] = p.get("nombre_completo", "Paciente")
+            t_copy["paciente_telefono"] = p.get("telefono", "")
+            t_copy["paciente_obra_social"] = p.get("obra_social", "Particular")
+            t_copy["paciente_numero_afiliado"] = p.get("numero_afiliado", "")
+            t_copy["paciente_fecha_nacimiento"] = p.get("fecha_nacimiento", None)
+            t_copy["paciente_monto_coseguro_default"] = float(p.get("monto_coseguro_default", 0) or 0)
+            t_copy["paciente_sesiones_totales"] = p.get("sesiones_totales", 10)
+            t_copy["paciente_sesiones_realizadas"] = p.get("sesiones_realizadas", 0)
+            t_copy.setdefault("monto_coseguro", float(p.get("monto_coseguro_default", 0) or 0))
+            t_copy.setdefault("estado_pago", "Pendiente")
+            turnos_map[t_id] = t_copy
+
+    turnos = list(turnos_map.values())
     if target_date:
         t_date_str = target_date.isoformat()
         turnos = [t for t in turnos if t.get("fecha") == t_date_str]
     if start_date:
         s_date_str = start_date.isoformat()
-        turnos = [t for t in turnos if t.get("fecha", "") >= s_date_str]
+        turnos = [t for t in turnos if str(t.get("fecha", "")) >= s_date_str]
     if end_date:
         e_date_str = end_date.isoformat()
-        turnos = [t for t in turnos if t.get("fecha", "") <= e_date_str]
+        turnos = [t for t in turnos if str(t.get("fecha", "")) <= e_date_str]
     if paciente_id:
         turnos = [t for t in turnos if str(t.get("paciente_id")) == str(paciente_id)]
-    
-    pacientes_map = {str(p["id"]): p for p in store["pacientes"]}
-    for t in turnos:
-        p = pacientes_map.get(str(t.get("paciente_id")), {})
-        t["paciente_nombre"] = p.get("nombre_completo", "Paciente")
-        t["paciente_telefono"] = p.get("telefono", "")
-        t["paciente_obra_social"] = p.get("obra_social", "")
-        t["paciente_sesiones_totales"] = p.get("sesiones_totales", 10)
-        t["paciente_sesiones_realizadas"] = p.get("sesiones_realizadas", 0)
-        
+
     return sorted(turnos, key=lambda x: (str(x.get("fecha", "")), str(x.get("hora_inicio", ""))))
 
 def _time_to_minutes(t_val: Any) -> int:
@@ -488,7 +614,20 @@ def create_turno(turno_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[s
                     _sync_sesiones_local(p_id)
                 return True, "Turno agendado exitosamente.", res.data[0]
         except Exception as e:
-            print(f"Error creando turno: {e}")
+            try:
+                base_turno = {
+                    "paciente_id": turno_payload.get("paciente_id"),
+                    "fecha": turno_payload.get("fecha"),
+                    "hora_inicio": turno_payload.get("hora_inicio"),
+                    "hora_fin": turno_payload.get("hora_fin"),
+                    "duracion_minutos": turno_payload.get("duracion_minutos", 45),
+                    "estado": turno_payload.get("estado", "Pendiente"),
+                    "motivo_ajuste": turno_payload.get("motivo_ajuste"),
+                    "notas": turno_payload.get("notas")
+                }
+                client.table("turnos").insert(base_turno).execute()
+            except Exception:
+                pass
 
     # Fallback local
     store = _get_local_store()
@@ -606,6 +745,217 @@ def _sync_sesiones_local(paciente_id: str):
         if str(p.get("id")) == str(paciente_id):
             p["sesiones_realizadas"] = asistencias
             break
+
+# ==============================================================================
+# OPERACIONES CRUD: PAGOS Y COSEGUROS (GESTIÓN DE COBROS Y SALDOS)
+# ==============================================================================
+
+def get_pagos(
+    paciente_id: Optional[str] = None,
+    turno_id: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None
+) -> List[Dict[str, Any]]:
+    """Obtiene el listado de cobros y pagos registrados combinando base de datos y local."""
+    pagos_map: Dict[str, Dict[str, Any]] = {}
+    
+    client = init_supabase_client()
+    if client:
+        try:
+            req = client.table("pagos").select("*").order("fecha_pago", desc=True).order("created_at", desc=True)
+            if paciente_id:
+                req = req.eq("paciente_id", str(paciente_id))
+            if turno_id:
+                req = req.eq("turno_id", str(turno_id))
+            if start_date:
+                req = req.gte("fecha_pago", start_date.isoformat())
+            if end_date:
+                req = req.lte("fecha_pago", end_date.isoformat())
+            res = req.execute()
+            if res.data is not None:
+                for p in res.data:
+                    pagos_map[str(p["id"])] = dict(p)
+        except Exception:
+            pass
+
+    store = _get_local_store()
+    for p in store.get("pagos", []):
+        p_id = str(p.get("id"))
+        if p_id not in pagos_map:
+            pagos_map[p_id] = dict(p)
+
+    pagos = list(pagos_map.values())
+    if paciente_id:
+        pagos = [p for p in pagos if str(p.get("paciente_id")) == str(paciente_id)]
+    if turno_id:
+        pagos = [p for p in pagos if str(p.get("turno_id")) == str(turno_id)]
+    if start_date:
+        s_str = start_date.isoformat()
+        pagos = [p for p in pagos if str(p.get("fecha_pago", "")) >= s_str]
+    if end_date:
+        e_str = end_date.isoformat()
+        pagos = [p for p in pagos if str(p.get("fecha_pago", "")) <= e_str]
+
+    return sorted(pagos, key=lambda x: (str(x.get("fecha_pago", "")), str(x.get("created_at", ""))), reverse=True)
+
+def get_pago_by_id(pago_id: str) -> Optional[Dict[str, Any]]:
+    """Obtiene un registro de pago específico por ID."""
+    if not pago_id:
+        return None
+    client = init_supabase_client()
+    if client:
+        try:
+            res = client.table("pagos").select("*").eq("id", str(pago_id)).limit(1).execute()
+            if res.data:
+                return res.data[0]
+        except Exception:
+            pass
+
+    store = _get_local_store()
+    for p in store.get("pagos", []):
+        if str(p.get("id")) == str(pago_id):
+            return p
+    return None
+
+def create_pago(pago_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[str, Any]]]:
+    """
+    Registra un nuevo cobro/pago en el sistema.
+    Permite montos manuales, frecuencias por sesión o tratamiento completo, y pagos parciales/señas.
+    """
+    if not pago_data.get("paciente_id"):
+        return False, "Debe especificar el paciente.", None
+
+    try:
+        monto_val = float(pago_data.get("monto", 0))
+        if monto_val < 0:
+            return False, "El monto no puede ser negativo.", None
+    except (ValueError, TypeError):
+        return False, "El monto ingresado no es un número válido.", None
+
+    if not pago_data.get("concepto"):
+        return False, "Debe especificar el concepto o motivo del cobro.", None
+
+    pago_payload = dict(pago_data)
+    pago_payload["monto"] = monto_val
+    if "fecha_pago" in pago_payload and isinstance(pago_payload["fecha_pago"], (date, datetime)):
+        pago_payload["fecha_pago"] = pago_payload["fecha_pago"].isoformat()
+    elif "fecha_pago" not in pago_payload:
+        pago_payload["fecha_pago"] = date.today().isoformat()
+
+    pago_payload.setdefault("modalidad", "Por sesión")
+    pago_payload.setdefault("metodo_pago", "Efectivo")
+    pago_payload.setdefault("sesiones_cubiertas", 1)
+    
+    if pago_payload.get("monto_total_esperado") is not None:
+        try:
+            pago_payload["monto_total_esperado"] = float(pago_payload["monto_total_esperado"])
+        except (ValueError, TypeError):
+            pago_payload["monto_total_esperado"] = None
+
+    client = init_supabase_client()
+    if client:
+        try:
+            res = client.table("pagos").insert(pago_payload).execute()
+            if res.data:
+                # Si está vinculado a un turno, actualizar estado de pago del turno
+                if pago_payload.get("turno_id"):
+                    client.table("turnos").update({"estado_pago": "Abonado"}).eq("id", str(pago_payload["turno_id"])).execute()
+                return True, "Pago registrado exitosamente.", res.data[0]
+        except Exception as e:
+            print(f"Error creando pago en Supabase: {e}")
+
+    # Fallback local
+    store = _get_local_store()
+    if "id" not in pago_payload or not pago_payload["id"]:
+        pago_payload["id"] = str(uuid.uuid4())
+    pago_payload.setdefault("created_at", datetime.now().isoformat())
+    store.setdefault("pagos", []).append(pago_payload)
+
+    # Actualizar turno localmente si existe
+    if pago_payload.get("turno_id"):
+        for t in store.get("turnos", []):
+            if str(t.get("id")) == str(pago_payload["turno_id"]):
+                t["estado_pago"] = "Abonado"
+                break
+
+    return True, "Pago registrado exitosamente.", pago_payload
+
+def update_pago(pago_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
+    """Actualiza un pago existente."""
+    client = init_supabase_client()
+    clean_updates = dict(updates)
+    if "fecha_pago" in clean_updates and isinstance(clean_updates["fecha_pago"], (date, datetime)):
+        clean_updates["fecha_pago"] = clean_updates["fecha_pago"].isoformat()
+    if "monto" in clean_updates:
+        clean_updates["monto"] = float(clean_updates["monto"])
+
+    if client:
+        try:
+            res = client.table("pagos").update(clean_updates).eq("id", str(pago_id)).execute()
+            if res.data:
+                return True, "Pago actualizado correctamente."
+        except Exception as e:
+            print(f"Error actualizando pago: {e}")
+
+    store = _get_local_store()
+    for p in store.get("pagos", []):
+        if str(p.get("id")) == str(pago_id):
+            p.update(clean_updates)
+            return True, "Pago actualizado correctamente."
+    return False, "Pago no encontrado."
+
+def delete_pago(pago_id: str) -> Tuple[bool, str]:
+    """Elimina un pago registrado."""
+    client = init_supabase_client()
+    if client:
+        try:
+            client.table("pagos").delete().eq("id", str(pago_id)).execute()
+            return True, "Pago eliminado exitosamente."
+        except Exception as e:
+            print(f"Error eliminando pago: {e}")
+
+    store = _get_local_store()
+    store["pagos"] = [p for p in store.get("pagos", []) if str(p.get("id")) != str(pago_id)]
+    return True, "Pago eliminado exitosamente."
+
+def get_resumen_financiero_paciente(paciente_id: str) -> Dict[str, Any]:
+    """
+    Calcula el resumen de cobros, total abonado, modalidad y saldos pendientes
+    para un paciente particular o con obra social.
+    """
+    pagos = get_pagos(paciente_id=paciente_id)
+    paciente = get_paciente_by_id(paciente_id) or {}
+    
+    total_abonado = sum(float(p.get("monto", 0) or 0) for p in pagos)
+    sesiones_cubiertas = sum(int(p.get("sesiones_cubiertas", 1) or 1) for p in pagos)
+    
+    # Determinar si hay un monto total pactado (seña o paquete global)
+    monto_total_pactado = None
+    for p in pagos:
+        if p.get("monto_total_esperado") and float(p.get("monto_total_esperado", 0)) > 0:
+            if monto_total_pactado is None or float(p["monto_total_esperado"]) > monto_total_pactado:
+                monto_total_pactado = float(p["monto_total_esperado"])
+
+    saldo_pendiente = 0.0
+    if monto_total_pactado is not None and monto_total_pactado > 0:
+        saldo_pendiente = max(0.0, monto_total_pactado - total_abonado)
+    else:
+        # Si no hay paquete global pactado, estimamos en base a coseguro default y sesiones realizadas
+        ses_realizadas = int(paciente.get("sesiones_realizadas", 0) or 0)
+        coseguro_unitario = float(paciente.get("monto_coseguro_default", 0) or 0)
+        if coseguro_unitario > 0 and ses_realizadas > 0:
+            total_devengado = ses_realizadas * coseguro_unitario
+            saldo_pendiente = max(0.0, total_devengado - total_abonado)
+
+    return {
+        "total_abonado": total_abonado,
+        "cantidad_pagos": len(pagos),
+        "pagos": pagos,
+        "ultimo_pago": pagos[0] if pagos else None,
+        "sesiones_cubiertas": sesiones_cubiertas,
+        "monto_total_pactado": monto_total_pactado,
+        "saldo_pendiente": saldo_pendiente
+    }
 
 # ==============================================================================
 # OPERACIONES CRUD: EVOLUCIONES CLÍNICAS

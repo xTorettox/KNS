@@ -58,9 +58,12 @@ CREATE TABLE IF NOT EXISTS public.pacientes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre_completo VARCHAR(255) NOT NULL,
     dni VARCHAR(30),
+    fecha_nacimiento DATE,
     edad INTEGER CHECK (edad >= 0 AND edad <= 125),
     telefono VARCHAR(50),
-    obra_social VARCHAR(100),
+    obra_social VARCHAR(100) DEFAULT 'Particular',
+    numero_afiliado VARCHAR(100),
+    monto_coseguro_default NUMERIC(10,2) DEFAULT 0,
     patologia TEXT,
     sesiones_totales INTEGER NOT NULL DEFAULT 10 CHECK (sesiones_totales >= 0),
     sesiones_realizadas INTEGER NOT NULL DEFAULT 0 CHECK (sesiones_realizadas >= 0),
@@ -69,6 +72,11 @@ CREATE TABLE IF NOT EXISTS public.pacientes (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Migraciones seguras si la tabla ya existía
+ALTER TABLE public.pacientes ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE;
+ALTER TABLE public.pacientes ADD COLUMN IF NOT EXISTS numero_afiliado VARCHAR(100);
+ALTER TABLE public.pacientes ADD COLUMN IF NOT EXISTS monto_coseguro_default NUMERIC(10,2) DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_pacientes_nombre ON public.pacientes (nombre_completo);
 CREATE INDEX IF NOT EXISTS idx_pacientes_dni ON public.pacientes (dni);
@@ -85,18 +93,46 @@ CREATE TABLE IF NOT EXISTS public.turnos (
     hora_fin TIME NOT NULL,
     duracion_minutos INTEGER NOT NULL DEFAULT 45 CHECK (duracion_minutos IN (30, 45, 60)),
     estado VARCHAR(30) NOT NULL DEFAULT 'Pendiente' CHECK (estado IN ('Pendiente', 'Asistió', 'Cancelado', 'Reprogramado', 'Ausente')),
+    monto_coseguro NUMERIC(10,2) DEFAULT 0,
+    estado_pago VARCHAR(30) NOT NULL DEFAULT 'Pendiente' CHECK (estado_pago IN ('Pendiente', 'Abonado', 'Parcial', 'Exento')),
     motivo_ajuste TEXT,
     notas TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Migraciones seguras para turnos
+ALTER TABLE public.turnos ADD COLUMN IF NOT EXISTS monto_coseguro NUMERIC(10,2) DEFAULT 0;
+ALTER TABLE public.turnos ADD COLUMN IF NOT EXISTS estado_pago VARCHAR(30) DEFAULT 'Pendiente';
+
 CREATE INDEX IF NOT EXISTS idx_turnos_fecha ON public.turnos (fecha);
 CREATE INDEX IF NOT EXISTS idx_turnos_paciente ON public.turnos (paciente_id);
 CREATE INDEX IF NOT EXISTS idx_turnos_estado ON public.turnos (estado);
 
 -- ==============================================================================
--- 6. TABLA: EVOLUCIONES CLÍNICAS (HISTORIAL MÉDICO)
+-- 6. TABLA: PAGOS Y COSEGUROS (GESTIÓN DE COBROS Y SALDOS)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.pagos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    paciente_id UUID NOT NULL REFERENCES public.pacientes(id) ON DELETE CASCADE,
+    turno_id UUID REFERENCES public.turnos(id) ON DELETE SET NULL,
+    fecha_pago DATE NOT NULL DEFAULT CURRENT_DATE,
+    monto NUMERIC(10,2) NOT NULL CHECK (monto >= 0),
+    monto_total_esperado NUMERIC(10,2), -- Total pactado en caso de pagos parciales / señas
+    concepto VARCHAR(150) NOT NULL, -- "Coseguro Sesión", "Sesión Particular", "Tratamiento Completo", "Seña / Pago Parcial", etc.
+    modalidad VARCHAR(50) NOT NULL DEFAULT 'Por sesión' CHECK (modalidad IN ('Por sesión', 'Tratamiento completo', 'Pago parcial / Seña')),
+    metodo_pago VARCHAR(50) NOT NULL DEFAULT 'Efectivo' CHECK (metodo_pago IN ('Efectivo', 'Transferencia / MP', 'Tarjeta Débito', 'Tarjeta Crédito', 'Otro')),
+    sesiones_cubiertas INTEGER DEFAULT 1,
+    notas TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pagos_paciente ON public.pagos (paciente_id);
+CREATE INDEX IF NOT EXISTS idx_pagos_fecha ON public.pagos (fecha_pago);
+CREATE INDEX IF NOT EXISTS idx_pagos_turno ON public.pagos (turno_id);
+
+-- ==============================================================================
+-- 7. TABLA: EVOLUCIONES CLÍNICAS (HISTORIAL MÉDICO)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.evoluciones (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -113,7 +149,7 @@ CREATE INDEX IF NOT EXISTS idx_evoluciones_paciente ON public.evoluciones (pacie
 CREATE INDEX IF NOT EXISTS idx_evoluciones_fecha ON public.evoluciones (fecha);
 
 -- ==============================================================================
--- 7. TABLA: ARCHIVOS ADJUNTOS (ÓRDENES, RADIOGRAFÍAS, RESONANCIAS)
+-- 8. TABLA: ARCHIVOS ADJUNTOS (ÓRDENES, RADIOGRAFÍAS, RESONANCIAS)
 -- ==============================================================================
 CREATE TABLE IF NOT EXISTS public.archivos_pacientes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -193,6 +229,7 @@ ALTER TABLE public.usuarios ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.configuracion ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.pacientes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.turnos ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.pagos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.evoluciones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.archivos_pacientes ENABLE ROW LEVEL SECURITY;
 
@@ -208,6 +245,9 @@ CREATE POLICY "Permitir todo en pacientes" ON public.pacientes FOR ALL USING (tr
 DROP POLICY IF EXISTS "Permitir todo en turnos" ON public.turnos;
 CREATE POLICY "Permitir todo en turnos" ON public.turnos FOR ALL USING (true) WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Permitir todo en pagos" ON public.pagos;
+CREATE POLICY "Permitir todo en pagos" ON public.pagos FOR ALL USING (true) WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Permitir todo en evoluciones" ON public.evoluciones;
 CREATE POLICY "Permitir todo en evoluciones" ON public.evoluciones FOR ALL USING (true) WITH CHECK (true);
 
@@ -217,16 +257,24 @@ CREATE POLICY "Permitir todo en archivos_pacientes" ON public.archivos_pacientes
 -- ==============================================================================
 -- 11. DATOS DE PRUEBA INICIALES (KINESIOLOGÍA)
 -- ==============================================================================
-INSERT INTO public.pacientes (id, nombre_completo, dni, edad, telefono, obra_social, patologia, sesiones_totales, sesiones_realizadas, activo, notas_generales)
+INSERT INTO public.pacientes (id, nombre_completo, dni, fecha_nacimiento, edad, telefono, obra_social, numero_afiliado, monto_coseguro_default, patologia, sesiones_totales, sesiones_realizadas, activo, notas_generales)
 VALUES
-    ('a1111111-1111-1111-1111-111111111111', 'Carlos Menéndez', '28456123', 46, '+5491144445555', 'OSDE 210', 'Lumbalgia mecánica con irradiación a miembro inferior derecho', 10, 3, true, 'Derivado por Dr. Rossi. Trae RMN lumbar.'),
-    ('a2222222-2222-2222-2222-222222222222', 'Florencia Varela', '34123890', 32, '+5491155556666', 'Swiss Medical', 'Tendinopatía del manguito rotador derecho', 10, 5, true, 'Dolor en abducción > 90°. Deportista aficionada (crossfit).'),
-    ('a3333333-3333-3333-3333-333333333333', 'Esteban Lamponne', '25890432', 50, '+5491166667777', 'Galeno Silver', 'Esguince de tobillo grado II (LPAA)', 8, 1, true, 'Fase subaguda con edema residual. Buena respuesta al vendaje funcional.')
+    ('a1111111-1111-1111-1111-111111111111', 'Carlos Menéndez', '28456123', '1980-05-14', 46, '+5491144445555', 'OSDE 210', '0210-482910-01', 3500, 'Lumbalgia mecánica con irradiación a miembro inferior derecho', 10, 3, true, 'Derivado por Dr. Rossi. Trae RMN lumbar.'),
+    ('a2222222-2222-2222-2222-222222222222', 'Florencia Varela', '34123890', '1994-08-22', 32, '+5491155556666', 'Swiss Medical', 'SM-9831204', 4000, 'Tendinopatía del manguito rotador derecho', 10, 5, true, 'Dolor en abducción > 90°. Deportista aficionada (crossfit).'),
+    ('a3333333-3333-3333-3333-333333333333', 'Esteban Lamponne', '25890432', '1976-11-03', 50, '+5491166667777', 'Particular', NULL, 12000, 'Esguince de tobillo grado II (LPAA)', 8, 1, true, 'Fase subaguda con edema residual. Buena respuesta al vendaje funcional.')
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO public.turnos (id, paciente_id, fecha, hora_inicio, hora_fin, duracion_minutos, estado, motivo_ajuste, notas)
+INSERT INTO public.turnos (id, paciente_id, fecha, hora_inicio, hora_fin, duracion_minutos, estado, monto_coseguro, estado_pago, motivo_ajuste, notas)
 VALUES
-    ('b1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', CURRENT_DATE, '08:30:00', '09:15:00', 45, 'Pendiente', NULL, 'Magneto + ejercicios de estabilidad lumbo-pélvica'),
-    ('b2222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', CURRENT_DATE, '09:00:00', '09:45:00', 45, 'Pendiente', NULL, 'Ultrasonido + movilidad escapulotorácica'),
-    ('b3333333-3333-3333-3333-333333333333', 'a3333333-3333-3333-3333-333333333333', CURRENT_DATE, '10:00:00', '10:30:00', 30, 'Pendiente', NULL, 'Crioterapia + propiocepción en bosu')
+    ('b1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', CURRENT_DATE, '08:30:00', '09:15:00', 45, 'Pendiente', 3500, 'Pendiente', NULL, 'Magneto + ejercicios de estabilidad lumbo-pélvica'),
+    ('b2222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', CURRENT_DATE, '09:00:00', '09:45:00', 45, 'Pendiente', 4000, 'Abonado', NULL, 'Ultrasonido + movilidad escapulotorácica'),
+    ('b3333333-3333-3333-3333-333333333333', 'a3333333-3333-3333-3333-333333333333', CURRENT_DATE, '10:00:00', '10:30:00', 30, 'Pendiente', 12000, 'Pendiente', NULL, 'Crioterapia + propiocepción en bosu')
 ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.pagos (id, paciente_id, turno_id, fecha_pago, monto, monto_total_esperado, concepto, modalidad, metodo_pago, sesiones_cubiertas, notas)
+VALUES
+    ('d1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', NULL, CURRENT_DATE - 5, 3500, NULL, 'Coseguro Sesión 1', 'Por sesión', 'Efectivo', 1, 'Coseguro primera sesión'),
+    ('d2222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', NULL, CURRENT_DATE - 10, 40000, 40000, 'Tratamiento Completo 10 Sesiones', 'Tratamiento completo', 'Transferencia / MP', 10, 'Abonó paquete completo de 10 coseguros juntos'),
+    ('d3333333-3333-3333-3333-333333333333', 'a3333333-3333-3333-3333-333333333333', NULL, CURRENT_DATE - 2, 30000, 96000, 'Seña / Pago Parcial Tratamiento Particular', 'Pago parcial / Seña', 'Transferencia / MP', 3, 'Dejó seña inicial de $30.000 de un total de $96.000 por 8 sesiones')
+ON CONFLICT (id) DO NOTHING;
+

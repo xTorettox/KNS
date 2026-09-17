@@ -8,7 +8,7 @@ from datetime import date
 # 1. Configuración de página de Streamlit
 st.set_page_config(
     page_title="KNS - Kinesiología",
-    page_icon="💆‍♀️",
+    page_icon="🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
