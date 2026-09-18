@@ -389,7 +389,7 @@ def create_paciente(paciente_data: Dict[str, Any]) -> Tuple[bool, str, Optional[
                     created_row.setdefault(k, v)
                 store.setdefault("pacientes", []).append(created_row)
                 return True, "Paciente registrado exitosamente.", created_row
-        except Exception as e:
+        except Exception:
             # Si falló por alguna columna que falta en Supabase remoto, intentar insertar datos base
             try:
                 base_payload = {
@@ -405,7 +405,13 @@ def create_paciente(paciente_data: Dict[str, Any]) -> Tuple[bool, str, Optional[
                     "activo": new_p.get("activo", True),
                     "notas_generales": new_p.get("notas_generales")
                 }
-                client.table("pacientes").insert(base_payload).execute()
+                res = client.table("pacientes").insert(base_payload).execute()
+                if res.data:
+                    created_row = dict(res.data[0])
+                    for k, v in new_p.items():
+                        created_row.setdefault(k, v)
+                    store.setdefault("pacientes", []).append(created_row)
+                    return True, "Paciente registrado exitosamente.", created_row
             except Exception:
                 pass
 
@@ -422,8 +428,15 @@ def update_paciente(paciente_id: str, updates: Dict[str, Any]) -> Tuple[bool, st
             res = client.table("pacientes").update(updates).eq("id", str(paciente_id)).execute()
             if res.data:
                 return True, "Paciente actualizado exitosamente."
-        except Exception as e:
-            print(f"Error actualizando paciente: {e}")
+        except Exception:
+            try:
+                base_keys = {'nombre_completo', 'dni', 'edad', 'telefono', 'obra_social', 'patologia', 'sesiones_totales', 'sesiones_realizadas', 'activo', 'notas_generales', 'updated_at'}
+                base_updates = {k: v for k, v in updates.items() if k in base_keys}
+                res = client.table("pacientes").update(base_updates).eq("id", str(paciente_id)).execute()
+                if res.data:
+                    return True, "Paciente actualizado exitosamente."
+            except Exception:
+                pass
 
     store = _get_local_store()
     for p in store["pacientes"]:
@@ -438,14 +451,13 @@ def delete_paciente(paciente_id: str) -> Tuple[bool, str]:
     if client:
         try:
             client.table("pacientes").delete().eq("id", str(paciente_id)).execute()
-            return True, "Paciente eliminado correctamente."
         except Exception as e:
             print(f"Error eliminando paciente: {e}")
 
     store = _get_local_store()
-    store["pacientes"] = [p for p in store["pacientes"] if str(p.get("id")) != str(paciente_id)]
-    store["turnos"] = [t for t in store["turnos"] if str(t.get("paciente_id")) != str(paciente_id)]
-    store["evoluciones"] = [e for e in store["evoluciones"] if str(e.get("paciente_id")) != str(paciente_id)]
+    store["pacientes"] = [p for p in store.get("pacientes", []) if str(p.get("id")) != str(paciente_id)]
+    store["turnos"] = [t for t in store.get("turnos", []) if str(t.get("paciente_id")) != str(paciente_id)]
+    store["evoluciones"] = [e for e in store.get("evoluciones", []) if str(e.get("paciente_id")) != str(paciente_id)]
     store["pagos"] = [p for p in store.get("pagos", []) if str(p.get("paciente_id")) != str(paciente_id)]
     return True, "Paciente eliminado correctamente."
 
@@ -465,7 +477,8 @@ def get_turnos(
     client = init_supabase_client()
     if client:
         try:
-            req = client.table("turnos").select("*, pacientes(id, nombre_completo, telefono, obra_social, numero_afiliado, fecha_nacimiento, monto_coseguro_default, sesiones_totales, sesiones_realizadas)").order("fecha").order("hora_inicio")
+            # Seleccionar todas las columnas del turno y del paciente asociado dinámicamente
+            req = client.table("turnos").select("*, pacientes(*)").order("fecha").order("hora_inicio")
             if target_date:
                 req = req.eq("fecha", target_date.isoformat())
             if start_date:
@@ -489,8 +502,37 @@ def get_turnos(
                     t.setdefault("monto_coseguro", float(p_info.get("monto_coseguro_default", 0) or 0))
                     t.setdefault("estado_pago", "Pendiente")
                     turnos_map[str(t["id"])] = t
-        except Exception:
-            pass
+        except Exception as e:
+            # Fallback seguro: cargar turnos directos y cruzar con pacientes
+            try:
+                req2 = client.table("turnos").select("*").order("fecha").order("hora_inicio")
+                if target_date:
+                    req2 = req2.eq("fecha", target_date.isoformat())
+                if start_date:
+                    req2 = req2.gte("fecha", start_date.isoformat())
+                if end_date:
+                    req2 = req2.lte("fecha", end_date.isoformat())
+                if paciente_id:
+                    req2 = req2.eq("paciente_id", str(paciente_id))
+                res2 = req2.execute()
+                if res2.data:
+                    pacientes_lookup = {str(p["id"]): p for p in get_pacientes()}
+                    for t in res2.data:
+                        p_info = pacientes_lookup.get(str(t.get("paciente_id")), {})
+                        t["pacientes"] = p_info
+                        t["paciente_nombre"] = p_info.get("nombre_completo", "Paciente Desconocido")
+                        t["paciente_telefono"] = p_info.get("telefono", "")
+                        t["paciente_obra_social"] = p_info.get("obra_social", "Particular")
+                        t["paciente_numero_afiliado"] = p_info.get("numero_afiliado", "")
+                        t["paciente_fecha_nacimiento"] = p_info.get("fecha_nacimiento", None)
+                        t["paciente_monto_coseguro_default"] = float(p_info.get("monto_coseguro_default", 0) or 0)
+                        t["paciente_sesiones_totales"] = p_info.get("sesiones_totales", 10)
+                        t["paciente_sesiones_realizadas"] = p_info.get("sesiones_realizadas", 0)
+                        t.setdefault("monto_coseguro", float(p_info.get("monto_coseguro_default", 0) or 0))
+                        t.setdefault("estado_pago", "Pendiente")
+                        turnos_map[str(t["id"])] = t
+            except Exception:
+                pass
 
     store = _get_local_store()
     pacientes_store_map = {str(p["id"]): p for p in store.get("pacientes", [])}
@@ -613,7 +655,7 @@ def create_turno(turno_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[s
                 if turno_payload.get("estado") == "Asistió":
                     _sync_sesiones_local(p_id)
                 return True, "Turno agendado exitosamente.", res.data[0]
-        except Exception as e:
+        except Exception:
             try:
                 base_turno = {
                     "paciente_id": turno_payload.get("paciente_id"),
@@ -625,7 +667,11 @@ def create_turno(turno_data: Dict[str, Any]) -> Tuple[bool, str, Optional[Dict[s
                     "motivo_ajuste": turno_payload.get("motivo_ajuste"),
                     "notas": turno_payload.get("notas")
                 }
-                client.table("turnos").insert(base_turno).execute()
+                res = client.table("turnos").insert(base_turno).execute()
+                if res.data:
+                    if turno_payload.get("estado") == "Asistió":
+                        _sync_sesiones_local(p_id)
+                    return True, "Turno agendado exitosamente.", res.data[0]
             except Exception:
                 pass
 
@@ -688,8 +734,16 @@ def update_turno(turno_id: str, updates: Dict[str, Any]) -> Tuple[bool, str]:
             if res.data:
                 _sync_sesiones_local(paciente_id)
                 return True, "Turno actualizado correctamente."
-        except Exception as e:
-            print(f"Error actualizando turno: {e}")
+        except Exception:
+            try:
+                base_keys = {'paciente_id', 'fecha', 'hora_inicio', 'hora_fin', 'duracion_minutos', 'estado', 'motivo_ajuste', 'notas', 'updated_at'}
+                base_updates = {k: v for k, v in clean_updates.items() if k in base_keys}
+                res = client.table("turnos").update(base_updates).eq("id", str(turno_id)).execute()
+                if res.data:
+                    _sync_sesiones_local(paciente_id)
+                    return True, "Turno actualizado correctamente."
+            except Exception:
+                pass
 
     store = _get_local_store()
     for t in store["turnos"]:
@@ -710,18 +764,16 @@ def delete_turno(turno_id: str) -> Tuple[bool, str]:
             if r.data:
                 paciente_id = r.data[0].get("paciente_id")
             client.table("turnos").delete().eq("id", str(turno_id)).execute()
-            if paciente_id:
-                _sync_sesiones_local(paciente_id)
-            return True, "Turno eliminado exitosamente."
         except Exception as e:
             print(f"Error eliminando turno: {e}")
 
     store = _get_local_store()
-    for t in store["turnos"]:
+    for t in store.get("turnos", []):
         if str(t.get("id")) == str(turno_id):
-            paciente_id = t.get("paciente_id")
+            if not paciente_id:
+                paciente_id = t.get("paciente_id")
             break
-    store["turnos"] = [t for t in store["turnos"] if str(t.get("id")) != str(turno_id)]
+    store["turnos"] = [t for t in store.get("turnos", []) if str(t.get("id")) != str(turno_id)]
     if paciente_id:
         _sync_sesiones_local(paciente_id)
     return True, "Turno eliminado exitosamente."

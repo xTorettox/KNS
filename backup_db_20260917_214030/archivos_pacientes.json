@@ -1,0 +1,22 @@
+[
+  {
+    "id": "4a53d46b-d798-4493-8304-e3ec780d9d9f",
+    "paciente_id": "a1111111-1111-1111-1111-111111111111",
+    "nombre_archivo": "1789407492077385874712592523046.jpg",
+    "storage_path": "a1111111-1111-1111-1111-111111111111/2b37a63a_1789407492077385874712592523046.jpg",
+    "tipo_documento": "Radiografía (Rx)",
+    "tamano_bytes": 3241925,
+    "public_url": "https://kgdbgjuezooecsobfwfy.supabase.co/storage/v1/object/public/pacientes-adjuntos/a1111111-1111-1111-1111-111111111111/2b37a63a_1789407492077385874712592523046.jpg",
+    "created_at": "2026-09-14T17:38:29.198075+00:00"
+  },
+  {
+    "id": "65bb54df-3f8e-446a-9f40-aa54b08f6cc0",
+    "paciente_id": "a1111111-1111-1111-1111-111111111111",
+    "nombre_archivo": "Screenshot_2026-09-14-13-01-03-644_com.android.chrome.jpg",
+    "storage_path": "a1111111-1111-1111-1111-111111111111/0b0aed07_Screenshot_2026-09-14-13-01-03-644_com.android.chrome.jpg",
+    "tipo_documento": "Orden Médica",
+    "tamano_bytes": 445761,
+    "public_url": "https://kgdbgjuezooecsobfwfy.supabase.co/storage/v1/object/public/pacientes-adjuntos/a1111111-1111-1111-1111-111111111111/0b0aed07_Screenshot_2026-09-14-13-01-03-644_com.android.chrome.jpg",
+    "created_at": "2026-09-14T17:40:06.466847+00:00"
+  }
+]

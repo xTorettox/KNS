@@ -1,0 +1,29 @@
+﻿id,nombre_completo,dni,edad,telefono,obra_social,patologia,sesiones_totales,sesiones_realizadas,activo,notas_generales,created_at,updated_at
+a2222222-2222-2222-2222-222222222222,Florencia Varela,34123890,32,+5491155556666,Swiss Medical,Tendinopatía del manguito rotador derecho,10,0,True,Dolor en abducción > 90°. Deportista aficionada (crossfit).,2026-09-13T15:59:39.99514+00:00,2026-09-13T15:59:39.99514+00:00
+a3333333-3333-3333-3333-333333333333,Esteban Lamponne,25890432,50,+5491166667777,Galeno Silver,Esguince de tobillo grado II (LPAA),8,0,True,Fase subaguda con edema residual. Buena respuesta al kinesiotape.,2026-09-13T15:59:39.99514+00:00,2026-09-13T15:59:39.99514+00:00
+d3471599-14ca-4817-bc76-dfcaaae6a1a4,Gastón Pauls,11222333,52,+541152355836,OSDE,Dolor de cuello,10,0,True,,2026-09-13T17:06:48.707658+00:00,2026-09-13T17:06:48.707658+00:00
+2efc444e-8179-421d-acb5-2eb21dcfd881,Galanteador,,46,,Particular,Seducir,10,0,True,Chamuyero,2026-09-13T17:47:19.385861+00:00,2026-09-13T17:47:19.385861+00:00
+a85b7865-cee7-4bb4-a48e-746171ba3ff1,Lily,,35,,ISSN,Cervicalgia /ATM,10,0,True,,2026-09-15T02:43:19.886831+00:00,2026-09-17T03:35:02.520794+00:00
+a1111111-1111-1111-1111-111111111111,Carlos Menéndez,28456123,46,+5491144445555,OSDE 210,Lumbalgia mecánica con irradiación a miembro inferior derecho,10,0,True,Derivado por Dr. Rossi. Trae RMN lumbar.,2026-09-13T15:59:39.99514+00:00,2026-09-15T18:49:22.539089+00:00
+9043df36-0229-4f19-a03f-7c834ab1f8ef,Ines Eugenia  Martinez,5456287,79,,PAMI,Trastorno de disco cervical,10,0,True,La paciente presenta mareos al cambiar de posición o girar la cabeza,2026-09-17T17:33:45.015029+00:00,2026-09-17T17:33:45.015029+00:00
+c7a313f9-e4ee-43da-9a60-2eac7456a2a6,Juge Randazo,,43,,Particular,,1,0,True,,2026-09-16T13:13:01.929825+00:00,2026-09-16T13:15:57.877535+00:00
+a7aa7a8b-45f3-40e4-bdc8-7c087b75241b,Sosa Carlos,,35,,Federada Salud,Fascinas plantar,5,2,True,,2026-09-14T00:03:52.322679+00:00,2026-09-17T09:43:45.506265+00:00
+cd260949-f8c9-4343-987b-4222fc85079a,Maria Ercilia,,35,,ISSN,,10,0,True,,2026-09-17T03:42:04.328525+00:00,2026-09-17T03:43:55.114465+00:00
+c9a08c21-cb41-4b58-96b6-197c0b5376da,Sol,,35,,Swiss Mefical,,1,0,True,,2026-09-17T03:45:54.707529+00:00,2026-09-17T03:46:24.137897+00:00
+6b3cc0ab-1bb8-4d13-9a6f-699ae294c4bc,Carmen Olivera,,35,,Pami,Contractura muscular  de la espalda / dolor de rodilla,2,1,True,,2026-09-15T02:45:15.437766+00:00,2026-09-16T01:33:30.976464+00:00
+3e07e5dd-7b3a-4e63-abda-c462f2a3c355,Nicol  Bellido,,33,,Particular,"Dolor de cuello, hombro y espalda",1,0,True,,2026-09-16T18:55:34.544469+00:00,2026-09-17T03:49:05.275694+00:00
+071ebaed-3074-4b77-bd9f-61a5e1cb0678,Ines,,35,,Pami,,10,0,True,,2026-09-17T03:41:27.11241+00:00,2026-09-17T09:47:01.361312+00:00
+d1042589-2e00-410d-91fd-60679c592824,Maria Guaiquin,92373385,76,2995520027,Pami,Le duele la vida 🫩,9,1,True,,2026-09-15T02:37:59.947589+00:00,2026-09-15T15:50:11.432297+00:00
+7e561318-b7bb-4f32-91fe-b2f94b6d523f,Federico García,,43,,Particular,Contractura espalda,10,0,True,,2026-09-17T22:58:07.476553+00:00,2026-09-17T23:00:15.894193+00:00
+4afcd859-7318-4a1c-a778-4da4ebc47130,Jennifer weiss,,35,,Particular,,1,0,True,,2026-09-16T19:00:47.733914+00:00,2026-09-17T09:48:11.938962+00:00
+5b1f35bc-34c5-4ff1-a889-421f83ddd017,Tassano Viña Adolfo Horacio,4754981,35,,Pami,Lumbalgia / Gonalgia,3,2,True,,2026-09-13T23:59:17.807245+00:00,2026-09-18T00:03:15.608923+00:00
+d1c33cf2-da50-4a70-94f4-2b6cc6d5dcf8,Luca Tejo,,23,,Particular,,1,0,True,,2026-09-16T19:02:49.51959+00:00,2026-09-18T00:03:30.722973+00:00
+97cf9825-3c10-4cc1-8dd8-733331734470,Galli Marcos Alejandro,10615299,35,,Pami,Cervicalgia/ATM,7,2,True,,2026-09-14T00:01:39.569064+00:00,2026-09-18T00:03:52.961491+00:00
+cb6cf540-86a7-4013-be1b-1eb1e2535c52,Mercedes Calaio,,52,,ISSN,Cirugía de juanete,5,1,True,,2026-09-16T18:58:47.90443+00:00,2026-09-17T03:33:50.569354+00:00
+f0b11e90-a147-45e4-9e05-82453a1c34b7,Virginia Maria Gomez,93532407,35,,Pami,Lesión muscular hombro derecho (ruptura músculos supra e infraespinoso),6,0,True,,2026-09-13T23:54:26.322726+00:00,2026-09-17T03:34:17.52239+00:00
+73bc3a43-0902-457a-9a77-c727b2744db7,Sandra Flores,19052124,58,2995082945,ISSN,Tendinitis de biceps brazo izq,10,1,True,,2026-09-15T02:40:30.919167+00:00,2026-09-17T09:51:14.855058+00:00
+e5e14dd8-d92b-4dbc-a9a2-30634407f3d5,Andratta Enrique,,35,,Swis medical,"Gonalgia izq (dolor de rodilla, gemelo, cuadri)
+DORSALGIA",5,1,True,,2026-09-16T11:16:10.693623+00:00,2026-09-17T09:42:37.760734+00:00
+288b4269-ff3c-41bd-8515-37b0321e0794,Sandra Muller,16160017,64,2994245011,ISSN,Síndrome del túnel carpiano mano drcha,5,1,True,,2026-09-15T02:41:49.103664+00:00,2026-09-17T09:52:29.0161+00:00
+a104d332-9401-459a-98fb-f56f40aeb546,Maria Elena Figueroa,,35,,Pami,,1,0,True,,2026-09-17T03:40:58.686143+00:00,2026-09-17T09:53:01.559623+00:00
+0edee732-2013-4737-bc81-933125055abb,Luis Jara,,84,,Pami,,1,0,True,,2026-09-17T03:40:17.996002+00:00,2026-09-17T09:53:23.613914+00:00

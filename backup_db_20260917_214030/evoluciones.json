@@ -1,0 +1,32 @@
+[
+  {
+    "id": "950dac27-4875-4f2d-abdb-95c419e4e600",
+    "paciente_id": "a1111111-1111-1111-1111-111111111111",
+    "turno_id": "b1111111-1111-1111-1111-111111111111",
+    "fecha": "2026-09-11",
+    "nota_clinica": "Paciente refiere alivio del dolor irradiado tras la sesión anterior. Refiere molestia puntual al levantarse.",
+    "tratamiento_aplicado": "TENS 20 min + elongación de psoas e isquiotibiales + ejercicios de core",
+    "escala_dolor_eva": 4,
+    "created_at": "2026-09-13T15:59:39.99514+00:00"
+  },
+  {
+    "id": "bac1d9b2-0548-4132-a0df-cf53749a4497",
+    "paciente_id": "a2222222-2222-2222-2222-222222222222",
+    "turno_id": "b2222222-2222-2222-2222-222222222222",
+    "fecha": "2026-09-12",
+    "nota_clinica": "Mejora en rango articular de hombro derecho. Test de Hawkins levemente positivo.",
+    "tratamiento_aplicado": "Movilizaciones pasivas + fortalecimiento de rotadores externos con theraband",
+    "escala_dolor_eva": 3,
+    "created_at": "2026-09-13T15:59:39.99514+00:00"
+  },
+  {
+    "id": "301ee729-050f-433b-8961-335543d0920a",
+    "paciente_id": "a1111111-1111-1111-1111-111111111111",
+    "turno_id": null,
+    "fecha": "2026-09-14",
+    "nota_clinica": "Probando evolución clínica...",
+    "tratamiento_aplicado": "Terapia de choque",
+    "escala_dolor_eva": 7,
+    "created_at": "2026-09-14T17:37:52.289171+00:00"
+  }
+]
