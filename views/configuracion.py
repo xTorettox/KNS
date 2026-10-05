@@ -78,9 +78,16 @@ def render_configuracion_view():
             with st.form("form_brand_config"):
                 c_n1, c_n2 = st.columns([1.5, 2])
                 with c_n1:
-                    new_clinic_name = st.text_input("Nombre de la Marca / Sigla", value=current_config.get("clinic_name", "KNS"))
+                    new_clinic_name = st.text_input("Nombre de la Marca / Sigla", value=current_config.get("clinic_name", "KION"))
                 with c_n2:
-                    new_subtitle = st.text_input("Subtítulo", value=current_config.get("subtitle", "KINESIOLOGÍA"))
+                    new_subtitle = st.text_input("Subtítulo", value=current_config.get("subtitle", "Centro Terapéutico Integral"))
+
+                new_base_url = st.text_input(
+                    "URL Base de la Web (Dominio para Enlaces de Registro)",
+                    value=current_config.get("base_url", ""),
+                    placeholder="Ej: https://kns-kinesiologia.streamlit.app",
+                    help="Si se deja vacío, el sistema detecta automáticamente la dirección web desde donde se ejecuta la aplicación."
+                )
 
                 st.markdown("##### Seleccionar Ícono o Subir Logo Propio")
                 icon_options = ["🩺", "🦴", "🏃", "⚡", "🖐️", "🧘", "🏥", "💪", "🩹", "🧬"]
@@ -94,11 +101,13 @@ def render_configuracion_view():
                 if current_config.get("custom_logo_bytes") is not None:
                     remove_custom_logo = st.checkbox("Eliminar imagen personalizada y volver al ícono estándar")
 
-                btn_save_brand = st.form_submit_button("Guardar Identidad Visual", type="primary")
+                btn_save_brand = st.form_submit_button("Guardar Configuración de Marca", type="primary")
                 if btn_save_brand:
                     updates = {
-                        "clinic_name": new_clinic_name.strip() or "KNS",
-                        "subtitle": new_subtitle.strip() or "KINESIOLOGÍA",
+                        "clinic_name": new_clinic_name.strip() or "KION",
+                        "subtitle": new_subtitle.strip() or "Centro Terapéutico Integral",
+                        "consultorio_nombre": new_clinic_name.strip() or "KION",
+                        "base_url": new_base_url.strip(),
                         "logo_icon": new_icon
                     }
                     if uploaded_logo is not None:
@@ -108,7 +117,7 @@ def render_configuracion_view():
 
                     ok_cfg, msg_cfg = update_app_config(updates)
                     if ok_cfg:
-                        st.success("¡Identidad visual actualizada con éxito!")
+                        st.success("¡Configuración actualizada con éxito!")
                         st.rerun()
 
     # ==============================================================================

@@ -70,11 +70,13 @@ def init_supabase_client() -> Optional[Any]:
 # ==============================================================================
 
 DEFAULT_APP_CONFIG = {
-    "clinic_name": "KNS",
-    "subtitle": "KINESIOLOGÍA",
+    "clinic_name": "KION",
+    "subtitle": "Centro Terapéutico Integral",
+    "consultorio_nombre": "KION",
     "logo_icon": "🩺",
     "custom_logo_url": None,
     "custom_logo_bytes": None,
+    "base_url": "",
     "phone": "+5491112345678",
     "address": "Consultorio Central",
     "work_start_hour": 8,

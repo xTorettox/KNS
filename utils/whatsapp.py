@@ -1,7 +1,8 @@
+# -*- coding: utf-8 -*-
 """
-Módulo de integración con WhatsApp y generación de enlaces directos wa.me.
+Módulo de integración con WhatsApp y generación de enlaces directos api.whatsapp.com / wa.me.
 Incluye formateo inteligente de números telefónicos (Argentina e Internacional)
-y plantillas contextuales para consultorios kinesiológicos.
+y plantillas contextuales para consultorios de Kinesiología (KION - Centro Terapéutico Integral).
 """
 import urllib.parse
 import re
@@ -9,7 +10,7 @@ from typing import Optional
 
 def normalize_phone_number(raw_phone: Optional[str], default_country_code: str = "549") -> str:
     """
-    Limpia y estandariza un número telefónico para la API de WhatsApp (wa.me).
+    Limpia y estandariza un número telefónico para la API de WhatsApp.
     Soporta números argentinos y formatos internacionales:
     - Remueve caracteres no numéricos (+, -, (, ), espacios).
     - Maneja prefijos de Argentina (elimina el 0 inicial del código de área y el 15 de celulares).
@@ -53,22 +54,28 @@ def normalize_phone_number(raw_phone: Optional[str], default_country_code: str =
     return digits
 
 def generate_whatsapp_url(phone: str, message: str) -> str:
-    """Genera la URL final lista para abrir en WhatsApp Web o App móvil."""
+    """
+    Genera la URL final lista para abrir en WhatsApp Web o App móvil.
+    Utiliza api.whatsapp.com con codificación UTF-8 segura para preservar
+    todos los emojis y signos de puntuación sin caracteres rotos.
+    """
     clean_phone = normalize_phone_number(phone)
-    encoded_message = urllib.parse.quote(message)
+    msg_str = str(message)
+    # Codificar mensaje en UTF-8 seguro
+    encoded_message = urllib.parse.quote(msg_str.encode("utf-8"), safe="")
     if not clean_phone:
-        return f"https://wa.me/?text={encoded_message}"
-    return f"https://wa.me/{clean_phone}?text={encoded_message}"
+        return f"https://api.whatsapp.com/send?text={encoded_message}"
+    return f"https://api.whatsapp.com/send?phone={clean_phone}&text={encoded_message}"
 
 # ==============================================================================
-# PLANTILLAS DE MENSAJES KINESIOLÓGICOS
+# PLANTILLAS DE MENSAJES KINESIOLÓGICOS (KION)
 # ==============================================================================
 
 def template_recordatorio_turno(
     nombre_paciente: str,
     fecha_str: str,
     hora_str: str,
-    consultorio: str = "KNS Kinesiología",
+    consultorio: str = "KION",
     gcal_url: Optional[str] = None
 ) -> str:
     """Mensaje para recordar turno del día o de la semana."""
@@ -85,7 +92,7 @@ def template_confirmacion_turno(
     fecha_str: str,
     hora_str: str,
     duracion_minutos: int = 45,
-    consultorio: str = "KNS Kinesiología",
+    consultorio: str = "KION",
     gcal_url: Optional[str] = None
 ) -> str:
     """Mensaje tras agendar un nuevo turno."""
@@ -103,7 +110,7 @@ def template_reprogramacion_turno(
     nueva_fecha_str: str,
     nueva_hora_str: str,
     motivo: Optional[str] = None,
-    consultorio: str = "KNS Kinesiología"
+    consultorio: str = "KION"
 ) -> str:
     """Mensaje por cambio de horario o reprogramación."""
     motivo_txt = f"\n*Motivo:* {motivo}\n" if motivo else "\n"
@@ -119,7 +126,7 @@ def template_aviso_sesiones_completadas(
     sesiones_realizadas: int,
     sesiones_totales: int,
     obra_social: Optional[str] = None,
-    consultorio: str = "KNS Kinesiología"
+    consultorio: str = "KION"
 ) -> str:
     """Mensaje para solicitar una nueva orden médica tras completar el plan de sesiones."""
     os_text = f" ({obra_social})" if obra_social else ""
@@ -133,17 +140,25 @@ def template_aviso_sesiones_completadas(
 def template_alta_paciente_link(
     nombre_paciente: str,
     registro_link: str,
-    consultorio: str = "KNS Kinesiología",
+    consultorio: str = "KION",
     fecha_str: Optional[str] = None,
     hora_str: Optional[str] = None
 ) -> str:
-    """Mensaje para enviar el formulario de alta de datos y pedido médico al paciente."""
-    turno_info = f" antes de tu turno del *{fecha_str} a las {hora_str} hs*" if (fecha_str and hora_str) else ""
+    """
+    Mensaje exacto para enviar el formulario de alta de datos y pedido médico al paciente.
+    """
+    if fecha_str and hora_str:
+        turno_info = f" antes de tu turno para el {fecha_str} a las {hora_str} hs"
+    elif fecha_str:
+        turno_info = f" antes de tu turno para el {fecha_str}"
+    else:
+        turno_info = ""
+
     return (
-        f"👋 Hola {nombre_paciente}, ¿cómo estás? Te escribimos de *{consultorio}*.\n\n"
-        f"📋 Para agilizar tu atención y preparar tu ficha médica{turno_info}, te pedimos por favor completar tus datos y adjuntar la foto o archivo de tu *pedido médico / orden* ingresando a este enlace:\n\n"
+        f"👋 Hola {nombre_paciente}, ¿cómo estás? Te escribimos de {consultorio}.\n\n"
+        f"📋 Para agilizar la preparación de tu ficha médica{turno_info}, te pedimos por favor completar tus datos y adjuntar, en caso de corresponder, la foto de tu pedido médico / orden en el siguiente enlace:\n\n"
         f"🔗 {registro_link}\n\n"
-        f"¡Muchas gracias! Si tenés alguna consulta, escribinos por este medio."
+        f"¡Muchas gracias! Cualquier duda estamos a tu disposición."
     )
 
 def template_confirmacion_turno_con_link(
@@ -152,7 +167,7 @@ def template_confirmacion_turno_con_link(
     hora_str: str,
     duracion_minutos: int = 45,
     registro_link: Optional[str] = None,
-    consultorio: str = "KNS Kinesiología",
+    consultorio: str = "KION",
     gcal_url: Optional[str] = None
 ) -> str:
     """Mensaje tras agendar un nuevo turno incluyendo el link de pre-alta si la ficha está pendiente."""

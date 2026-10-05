@@ -254,10 +254,62 @@ def mark_all_notifications_as_read() -> bool:
 # GENERADORES DE ENLACES Y MENSAJES WHATSAPP
 # ==============================================================================
 
-def generate_registration_link(token: str) -> str:
-    """Genera el enlace absoluto o relativo con el token de registro."""
-    # En producción o local, usamos la query param ?registro=TOKEN
-    return f"?registro={token}"
+def get_base_url() -> str:
+    """
+    Obtiene la URL base donde corre la aplicación.
+    Prioridad:
+    1. st.secrets["BASE_URL"] o st.secrets["APP_URL"]
+    2. Configuración en base de datos (app_config['base_url'])
+    3. Detección automática en tiempo de ejecución vía st.context.headers
+    4. Fallback a http://localhost:8501
+    """
+    # 1. st.secrets
+    try:
+        if hasattr(st, "secrets"):
+            if "BASE_URL" in st.secrets and st.secrets["BASE_URL"]:
+                return str(st.secrets["BASE_URL"]).rstrip("/")
+            if "APP_URL" in st.secrets and st.secrets["APP_URL"]:
+                return str(st.secrets["APP_URL"]).rstrip("/")
+    except Exception:
+        pass
+
+    # 2. Configuración en base de datos
+    try:
+        cfg = get_app_config()
+        if cfg and cfg.get("base_url"):
+            return str(cfg["base_url"]).rstrip("/")
+    except Exception:
+        pass
+
+    # 3. Streamlit Context Headers en tiempo real
+    try:
+        ctx = getattr(st, "context", None)
+        if ctx and hasattr(ctx, "headers"):
+            headers = ctx.headers
+            origin = headers.get("origin") or headers.get("Origin")
+            if origin:
+                return str(origin).rstrip("/")
+            
+            host = headers.get("x-forwarded-host") or headers.get("host") or headers.get("Host")
+            if host:
+                proto = headers.get("x-forwarded-proto", "https" if ("streamlit.app" in str(host) or "https" in str(host)) else "http")
+                return f"{proto}://{host}".rstrip("/")
+                
+            referer = headers.get("referer") or headers.get("Referer")
+            if referer:
+                import urllib.parse
+                parsed = urllib.parse.urlparse(referer)
+                if parsed.scheme and parsed.netloc:
+                    return f"{parsed.scheme}://{parsed.netloc}".rstrip("/")
+    except Exception:
+        pass
+
+    return "http://localhost:8501"
+
+def generate_registration_link(token: str, base_url: Optional[str] = None) -> str:
+    """Genera la URL completa y clicable con la web raíz y el token de registro."""
+    root = (base_url or get_base_url()).rstrip("/")
+    return f"{root}/?registro={token}"
 
 def generate_registration_whatsapp_url(
     phone: str,
@@ -265,23 +317,20 @@ def generate_registration_whatsapp_url(
     token: str,
     turno_fecha: Optional[str] = None,
     turno_hora: Optional[str] = None,
-    clinic_name: str = "KNS Kinesiología"
+    clinic_name: str = "KION",
+    base_url: Optional[str] = None
 ) -> str:
     """
     Crea el enlace wa.me con el texto de invitación para completar el formulario.
     """
-    link = generate_registration_link(token)
-    
-    fecha_info = ""
-    if turno_fecha and turno_hora:
-        fecha_info = f" de tu turno para el *{turno_fecha} a las {turno_hora} hs*"
-    elif turno_fecha:
-        fecha_info = f" de tu turno para el *{turno_fecha}*"
-
-    mensaje = (
-        f"👋 Hola *{paciente_nombre}*, ¿cómo estás? Te escribimos de *{clinic_name}*.\n\n"
-        f"📋 Para agilizar la preparación de tu ficha médica antes{fecha_info}, te pedimos por favor completar tus datos y adjuntar la foto de tu *pedido médico / orden* en el siguiente enlace:\n\n"
-        f"🔗 {link}\n\n"
-        f"¡Muchas gracias! Cualquier duda estamos a tu disposición."
+    link = generate_registration_link(token, base_url=base_url)
+    from utils.whatsapp import template_alta_paciente_link
+    mensaje = template_alta_paciente_link(
+        nombre_paciente=paciente_nombre,
+        registro_link=link,
+        consultorio=clinic_name,
+        fecha_str=turno_fecha,
+        hora_str=turno_hora
     )
     return generate_whatsapp_url(phone, mensaje)
+

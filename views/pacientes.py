@@ -316,10 +316,11 @@ def render_pacientes_view():
                 st.markdown("###### Enlace de Alta y Pedido Médico")
                 st.caption("Enviar al paciente para que complete sus datos y adjunte su orden médica:")
                 reg_tok_p = create_registration_token(sel_id, None, nom_act, tel_act)
-                wa_link_f = generate_registration_whatsapp_url(tel_act, nom_act, reg_tok_p["token"], clinic_name="KNS Kinesiología")
+                full_link_p = generate_registration_link(reg_tok_p["token"])
+                wa_link_f = generate_registration_whatsapp_url(tel_act, nom_act, reg_tok_p["token"], clinic_name="KION")
                 st_html(f'<a href="{wa_link_f}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center; margin-bottom: 6px;">📲 Enviar por WhatsApp</a>')
                 st.caption("Enlace directo:")
-                st.code(f"?registro={reg_tok_p['token']}", language="text")
+                st.code(full_link_p, language="text")
 
         with col_ed_p:
             with st.popover("⚙️ Modificar Ficha", use_container_width=True):

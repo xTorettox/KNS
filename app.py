@@ -1,14 +1,12 @@
-"""
-KNS - Sistema de Gestión en Kinesiología
-Punto de entrada principal de la aplicación Streamlit con autenticación, roles y personalización de marca.
-"""
+import os
 import streamlit as st
 from datetime import date
 
 # 1. Configuración de página de Streamlit
+logo_path = "assets/kion_logo.png" if os.path.exists("assets/kion_logo.png") else "logo.png"
 st.set_page_config(
-    page_title="KNS - Kinesiología",
-    page_icon="🩺",
+    page_title="KION - Centro Terapéutico Integral",
+    page_icon=logo_path if os.path.exists(logo_path) else "🩺",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -59,7 +57,6 @@ def main():
     user_role = current_user.get("rol", "kinesio")
     app_config = get_app_config()
 
-
     # ==============================================================================
     # SIDEBAR: LOGO DINÁMICO, PERFIL, NAVEGACIÓN Y EASTER EGG
     # ==============================================================================
@@ -67,21 +64,24 @@ def main():
         # LOGO Y MARCA DINÁMICOS
         custom_logo_bytes = app_config.get("custom_logo_bytes")
         logo_icon = app_config.get("logo_icon", "🩺")
-        clinic_name = app_config.get("clinic_name", "KNS")
-        subtitle = app_config.get("subtitle", "KINESIOLOGÍA")
+        clinic_name = app_config.get("clinic_name", "KION")
+        subtitle = app_config.get("subtitle", "Centro Terapéutico Integral")
 
         if custom_logo_bytes:
-            st.image(custom_logo_bytes, width=100)
+            st.image(custom_logo_bytes, use_container_width=True)
+            icon_html = ""
+        elif os.path.exists(logo_path):
+            st.image(logo_path, use_container_width=True)
             icon_html = ""
         else:
             icon_html = f"<div style='font-size: 2.2rem; margin-bottom: -5px;'>{logo_icon}</div>"
 
         st_html(
             f"""
-            <div style='text-align: center; padding: 0.5rem 0;'>
+            <div style='text-align: center; padding: 0.2rem 0;'>
                 {icon_html}
-                <h2 style="margin: 0; color: #38bdf8; font-weight: 800; letter-spacing: -0.5px;">{clinic_name}</h2>
-                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">{subtitle}</p>
+                <h2 style="margin: 0; color: #38bdf8; font-weight: 800; letter-spacing: -0.5px; font-size: 1.3rem;">{clinic_name}</h2>
+                <p style="margin: 0; font-size: 0.75rem; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">{subtitle}</p>
             </div>
             <hr style="margin: 0.8rem 0; border-color: rgba(255,255,255,0.08);"/>
             """

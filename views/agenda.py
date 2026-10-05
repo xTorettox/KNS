@@ -268,15 +268,15 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                         msg_wa = template_recordatorio_turno(p_nombre, target_date_str, h_ini, consultorio=clinic_name, gcal_url=gcal_url_t)
                         wa_url = generate_whatsapp_url(p_tel, msg_wa)
                         st_html(f'<a href="{wa_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;" title="Recordatorio por WhatsApp">📲 Turno</a>')
-                    with col_w2:
                         with st.popover("🔗 Ficha", use_container_width=True):
                             st.markdown("###### Enlace de Ficha y Pedido Médico")
                             st.caption("Enviar al paciente para que complete sus datos y suba su orden:")
                             reg_tok = create_registration_token(p_id, t_id, p_nombre, p_tel)
                             wa_link_ficha = generate_registration_whatsapp_url(p_tel, p_nombre, reg_tok["token"], turno_fecha=target_date_str, turno_hora=h_ini, clinic_name=clinic_name)
+                            full_reg_link = generate_registration_link(reg_tok["token"])
                             st_html(f'<a href="{wa_link_ficha}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center; margin-bottom: 6px;">📲 Enviar WhatsApp</a>')
                             st.caption("Enlace directo:")
-                            st.code(f"?registro={reg_tok['token']}", language="text")
+                            st.code(full_reg_link, language="text")
 
                 with c_det3:
                     st_html(f'<a href="{gcal_url_t}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Google Cal</a>')
