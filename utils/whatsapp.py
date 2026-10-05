@@ -114,6 +114,22 @@ def template_reprogramacion_turno(
         f"Por favor confirmanos si te queda cómodo este horario. ¡Muchas gracias!"
     )
 
+def template_aviso_sesiones_completadas(
+    nombre_paciente: str,
+    sesiones_realizadas: int,
+    sesiones_totales: int,
+    obra_social: Optional[str] = None,
+    consultorio: str = "KNS Kinesiología"
+) -> str:
+    """Mensaje para solicitar una nueva orden médica tras completar el plan de sesiones."""
+    os_text = f" ({obra_social})" if obra_social else ""
+    return (
+        f"📋 Estimado/a {nombre_paciente}, te escribimos de *{consultorio}*.\n\n"
+        f"Queremos informarte que has completado *{sesiones_realizadas} de {sesiones_totales} sesiones* autorizadas por tu cobertura médica{os_text}.\n\n"
+        f"🩺 Para poder continuar con tu tratamiento y rehabilitación, te solicitamos gestionar una *nueva orden médica* con tu traumatólogo/médico tratante.\n\n"
+        f"Cualquier consulta quedamos a tu entera disposición. ¡Saludos!"
+    )
+
 def template_alta_paciente_link(
     nombre_paciente: str,
     registro_link: str,
