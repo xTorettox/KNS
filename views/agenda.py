@@ -12,6 +12,7 @@ from typing import Optional, List, Dict, Any
 from utils.supabase_client import (
     get_turnos,
     get_pacientes,
+    create_paciente,
     create_turno,
     update_turno,
     delete_turno,
@@ -24,7 +25,14 @@ from utils.whatsapp import (
     generate_whatsapp_url,
     template_recordatorio_turno,
     template_confirmacion_turno,
+    template_confirmacion_turno_con_link,
+    template_alta_paciente_link,
     template_reprogramacion_turno
+)
+from utils.registration import (
+    create_registration_token,
+    generate_registration_link,
+    generate_registration_whatsapp_url
 )
 from utils.google_calendar import (
     generate_google_calendar_url,
@@ -215,6 +223,9 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
 
             badge_pago_html = '<span style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">✓ ABONADO</span>' if estado_pago == "Abonado" else '<span style="background: rgba(234,179,8,0.15); color: #facc15; border: 1px solid rgba(234,179,8,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">⏳ PAGO PENDIENTE</span>'
 
+            is_ficha_completa = bool(turno.get("paciente_ficha_completada", False))
+            badge_ficha_html = '<span style="background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">📋 FICHA COMPLETA</span>' if is_ficha_completa else '<span style="background: rgba(251,146,60,0.15); color: #fb923c; border: 1px solid rgba(251,146,60,0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.72rem; font-weight: 700;">📝 FICHA PENDIENTE</span>'
+
             with st.container():
                 st_html(
                     f"""
@@ -230,6 +241,8 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                                     <span>💵 {'Valor Sesión:' if is_part else 'Coseguro:'} <b style="color: #4ade80;">${monto_cos:,.2f}</b></span>
                                     <span>•</span>
                                     {badge_pago_html}
+                                    <span>•</span>
+                                    {badge_ficha_html}
                                 </div>
                             </div>
                             <div>
@@ -240,7 +253,7 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                     """
                 )
 
-                c_det1, c_det2, c_det3, c_det4, c_det5 = st.columns([1.8, 1.3, 1.3, 1.3, 1.5])
+                c_det1, c_det2, c_det3, c_det4, c_det5 = st.columns([1.7, 1.4, 1.2, 1.2, 1.5])
                 
                 with c_det1:
                     st_html(render_session_progress(ses_real, ses_tot))
@@ -250,9 +263,20 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                         st.caption(f"⏱ *Ajuste:* {motivo_ajuste}")
 
                 with c_det2:
-                    msg_wa = template_recordatorio_turno(p_nombre, target_date_str, h_ini, consultorio=clinic_name, gcal_url=gcal_url_t)
-                    wa_url = generate_whatsapp_url(p_tel, msg_wa)
-                    st_html(f'<a href="{wa_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 WhatsApp</a>')
+                    col_w1, col_w2 = st.columns(2)
+                    with col_w1:
+                        msg_wa = template_recordatorio_turno(p_nombre, target_date_str, h_ini, consultorio=clinic_name, gcal_url=gcal_url_t)
+                        wa_url = generate_whatsapp_url(p_tel, msg_wa)
+                        st_html(f'<a href="{wa_url}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;" title="Recordatorio por WhatsApp">📲 Turno</a>')
+                    with col_w2:
+                        with st.popover("🔗 Ficha", use_container_width=True):
+                            st.markdown("###### Enlace de Ficha y Pedido Médico")
+                            st.caption("Enviar al paciente para que complete sus datos y suba su orden:")
+                            reg_tok = create_registration_token(p_id, t_id, p_nombre, p_tel)
+                            wa_link_ficha = generate_registration_whatsapp_url(p_tel, p_nombre, reg_tok["token"], turno_fecha=target_date_str, turno_hora=h_ini, clinic_name=clinic_name)
+                            st_html(f'<a href="{wa_link_ficha}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center; margin-bottom: 6px;">📲 Enviar WhatsApp</a>')
+                            st.caption("Enlace directo:")
+                            st.code(f"?registro={reg_tok['token']}", language="text")
 
                 with c_det3:
                     st_html(f'<a href="{gcal_url_t}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Google Cal</a>')
@@ -310,6 +334,7 @@ def render_day_turnos_detail(target_date: date, clinic_name: str, show_title: bo
                                         st.success("¡Cobro registrado exitosamente!")
                                         st.rerun()
                                     else:
+                                        st.error(msg_qp)
                                         st.error(msg_qp)
 
                     with col_pop2:
@@ -740,134 +765,296 @@ def render_agenda_view():
         return
 
     # ==============================================================================
-    # MODO 4: ➕ AGENDAR NUEVO TURNO
+    # MODO 4: ➕ AGENDAR NUEVO TURNO (CARGA RÁPIDA + LINK DE FICHA O PACIENTE EXISTENTE)
     # ==============================================================================
     elif selected_mode == "➕ Agendar Turno":
         st.markdown("#### Agendar Turno Kinesiológico")
-        st.caption("Selecciona directamente cualquier fecha futura (15, 30 días, etc.) y horario:")
+        st.caption("Podés hacer una carga rápida con Nombre y WhatsApp para enviarle el link de alta al paciente, o agendar para un paciente ya existente:")
 
-        pacientes_list = get_pacientes(activo_only=True)
-        if not pacientes_list:
-            st.warning("No hay pacientes activos registrados. Por favor, crea un paciente primero en la sección 'Pacientes'.")
-        else:
-            with st.form("form_nuevo_turno_direct", clear_on_submit=False):
-                col_f_ag1, col_f_ag2 = st.columns([1.5, 2])
-                with col_f_ag1:
-                    fecha_turno_sel = st.date_input("Fecha del Turno *", value=st.session_state.agenda_date)
-                with col_f_ag2:
-                    paciente_options = {p["nombre_completo"]: p["id"] for p in pacientes_list}
-                    nombre_sel = st.selectbox("Seleccionar Paciente *", list(paciente_options.keys()))
-                    paciente_id_sel = paciente_options[nombre_sel]
-
-                paciente_obj = next((p for p in pacientes_list if p["id"] == paciente_id_sel), {})
-                p_os_actual = paciente_obj.get('obra_social', 'Particular') if paciente_obj else 'Particular'
-                p_cos_default = float(paciente_obj.get('monto_coseguro_default', 0) or 0) if paciente_obj else 0.0
-                is_part_ag = (str(p_os_actual).lower().strip() == 'particular')
-
-                if paciente_obj:
-                    ses_r = paciente_obj.get("sesiones_realizadas", 0)
-                    ses_t = paciente_obj.get("sesiones_totales", 10)
-                    restantes = max(0, ses_t - ses_r)
-                    st.markdown(
-                        f"📋 **Cobertura:** {'👤 Particular' if is_part_ag else f'🏥 {p_os_actual}'} | "
-                        f"💵 **{'Valor Sesión:' if is_part_ag else 'Coseguro:'}** ${p_cos_default:,.2f} | "
-                        f"🎟️ **Sesiones Restantes:** {restantes} de {ses_t}"
-                    )
-                    if restantes <= 0:
-                        st.error("⚠️ Este paciente ha completado todas sus sesiones autorizadas. Solicitar nueva orden.")
-
-                col_h1, col_h2, col_cos = st.columns([1.2, 1.2, 1.6])
-                with col_h1:
-                    hora_inicio_sel = st.time_input("Hora de Inicio", value=time(8, 30))
-                with col_h2:
-                    duracion_sel = st.selectbox("Duración de la Sesión", [30, 45, 60], index=1)
-                with col_cos:
-                    lbl_monto_ag = "Valor Sesión ($)" if is_part_ag else "Monto Coseguro ($)"
-                    monto_coseguro_turno = st.number_input(
-                        lbl_monto_ag,
-                        min_value=0.0,
-                        step=500.0,
-                        value=p_cos_default,
-                        help="Monto de cobro manual para esta sesión."
-                    )
-                
-                dt_temp = datetime.combine(fecha_turno_sel, hora_inicio_sel) + timedelta(minutes=duracion_sel)
-                hora_fin_calc = dt_temp.time()
-
-                st_html(
-                    f"""
-                    <div style="background-color: rgba(2, 132, 199, 0.1); border-left: 4px solid #0284c7; padding: 10px; border-radius: 6px; margin: 10px 0;">
-                        <b>Resumen:</b> {fecha_turno_sel.strftime('%d/%m/%Y')} | {hora_inicio_sel.strftime('%H:%M')} hs ➔ {hora_fin_calc.strftime('%H:%M')} hs ({duracion_sel} min) | 💵 {'Valor Sesión:' if is_part_ag else 'Coseguro:'} <b>${monto_coseguro_turno:,.2f}</b>
+        # Si recién se agendó un turno, mostrar tarjeta de acciones rápidas WhatsApp
+        if "reciente_turno_agendado" in st.session_state and st.session_state.reciente_turno_agendado:
+            rec = st.session_state.reciente_turno_agendado
+            st_html(
+                f"""
+                <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.15), rgba(14, 165, 233, 0.25)); border: 2px solid #0284c7; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h4 style="margin: 0; color: #38bdf8;">✅ ¡Turno agendado para {rec.get('nombre')}!</h4>
+                            <div style="font-size: 0.9rem; color: #e2e8f0; margin-top: 4px;">
+                                🗓️ <b>{rec.get('fecha_str')}</b> a las <b>{rec.get('hora_str')} hs</b> | 📞 {rec.get('telefono') or 'Sin teléfono'}
+                            </div>
+                        </div>
                     </div>
-                    """
-                )
+                </div>
+                """
+            )
+            col_rec1, col_rec2, col_rec3 = st.columns([2, 2, 1.2])
+            with col_rec1:
+                st_html(f'<a href="{rec.get("wa_url")}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center;">📲 Enviar Link y Confirmación por WhatsApp</a>')
+            with col_rec2:
+                st_html(f'<a href="{rec.get("gcal_url")}" target="_blank" class="btn-gcal" style="width: 100%; text-align: center; justify-content: center;">📅 Añadir a Google Calendar</a>')
+            with col_rec3:
+                if st.button("✓ Listo / Cerrar", key="btn_close_reciente", use_container_width=True):
+                    del st.session_state["reciente_turno_agendado"]
+                    st.rerun()
 
-                col_n1, col_n2 = st.columns([2, 1])
-                with col_n1:
-                    turno_notas = st.text_input("Tratamiento previsto / Notas", placeholder="Ej: Fisioterapia + ejercicios McKenzie")
-                with col_n2:
-                    turno_estado_ini = st.selectbox("Estado Inicial", ["Pendiente", "Asistió"])
+            if rec.get("reg_link"):
+                st.markdown(f"**Enlace de alta directa para el paciente:**")
+                st.code(rec["reg_link"], language="text")
+            st.markdown("---")
 
-                btn_agendar = st.form_submit_button("📅 Confirmar y Agendar Turno", type="primary", use_container_width=True)
+        tab_rapida, tab_existente = st.tabs([
+            "⚡ Carga Rápida + Enviar Link de Ficha por WhatsApp",
+            "👤 Seleccionar Paciente ya Registrado"
+        ])
 
-                if btn_agendar:
-                    h_ini_val = hora_inicio_sel.hour * 60 + hora_inicio_sel.minute
-                    h_fin_val = hora_fin_calc.hour * 60 + hora_fin_calc.minute
+        # TAB 1: CARGA RÁPIDA (NOMBRE + TELÉFONO + FECHA/HORA + LINK WHATSAPP)
+        with tab_rapida:
+            st.markdown("##### ⚡ Agendar solo con Nombre y WhatsApp")
+            st.caption("Cargás los datos esenciales del turno y el paciente completará el resto (DNI, Obra Social, Domicilio y foto de su Pedido Médico) mediante el enlace que le envíes por WhatsApp.")
+            
+            with st.form("form_nuevo_turno_rapido", clear_on_submit=False):
+                col_r_nom, col_r_tel = st.columns([2, 1.5])
+                with col_r_nom:
+                    rapido_nombre = st.text_input("Nombre y Apellido del Paciente *", placeholder="Ej: Perez, Juan")
+                with col_r_tel:
+                    rapido_tel = st.text_input("Celular / WhatsApp *", placeholder="Ej: +54 9 11 1234-5678")
 
-                    if h_ini_val < WORK_START_HOUR * 60 or h_fin_val > WORK_END_HOUR * 60:
-                        st.error(f"El turno debe estar dentro del horario de atención ({WORK_START_HOUR}:00 a {WORK_END_HOUR}:00 hs).")
+                col_r_f, col_r_h, col_r_dur = st.columns([1.5, 1.2, 1.2])
+                with col_r_f:
+                    rapido_fecha = st.date_input("Fecha del Turno *", value=st.session_state.agenda_date, key="rapido_f_in")
+                with col_r_h:
+                    rapido_hora = st.time_input("Hora de Inicio *", value=time(8, 30), key="rapido_h_in")
+                with col_r_dur:
+                    rapido_dur = st.selectbox("Duración (min)", [30, 45, 60], index=1, key="rapido_dur_in")
+
+                rapido_dt_fin = datetime.combine(rapido_fecha, rapido_hora) + timedelta(minutes=rapido_dur)
+                rapido_h_fin = rapido_dt_fin.time()
+
+                col_r_os, col_r_cos = st.columns([2, 1.5])
+                with col_r_os:
+                    rapido_os = st.text_input("Obra Social / Cobertura (Opcional)", value="Particular", placeholder="Ej: OSDE, Swiss Medical, Particular...")
+                with col_r_cos:
+                    rapido_cos = st.number_input("Monto Coseguro / Sesión ($)", min_value=0.0, step=500.0, value=4000.0)
+
+                rapido_notas = st.text_input("Motivo de Consulta / Notas", placeholder="Ej: Dolor rodilla derecha post-partido")
+
+                btn_agendar_rapido = st.form_submit_button("📅 Agendar Turno y Generar Link para WhatsApp", type="primary", use_container_width=True)
+
+                if btn_agendar_rapido:
+                    if not rapido_nombre.strip():
+                        st.error("El nombre y apellido son obligatorios.")
+                    elif not rapido_tel.strip():
+                        st.error("El teléfono / WhatsApp es obligatorio para enviar el formulario.")
                     else:
-                        is_valid, count_overlap, overlap_msg = check_turnos_overlap(
-                            target_date=fecha_turno_sel,
-                            hora_inicio=hora_inicio_sel,
-                            hora_fin=hora_fin_calc
+                        h_ini_m = rapido_hora.hour * 60 + rapido_hora.minute
+                        h_fin_m = rapido_h_fin.hour * 60 + rapido_h_fin.minute
+
+                        if h_ini_m < WORK_START_HOUR * 60 or h_fin_m > WORK_END_HOUR * 60:
+                            st.error(f"El turno debe estar dentro del horario de atención ({WORK_START_HOUR}:00 a {WORK_END_HOUR}:00 hs).")
+                        else:
+                            is_valid, _, overlap_msg = check_turnos_overlap(
+                                target_date=rapido_fecha,
+                                hora_inicio=rapido_hora,
+                                hora_fin=rapido_h_fin
+                            )
+                            if not is_valid:
+                                st.error(f"❌ {overlap_msg}")
+                            else:
+                                # 1. Crear o buscar paciente rápido
+                                ok_p, msg_p, created_p = create_paciente({
+                                    "nombre_completo": rapido_nombre.strip(),
+                                    "telefono": rapido_tel.strip(),
+                                    "obra_social": rapido_os.strip() or "Particular",
+                                    "monto_coseguro_default": float(rapido_cos),
+                                    "patologia": rapido_notas.strip(),
+                                    "ficha_completada": False,
+                                    "activo": True
+                                })
+                                if not ok_p or not created_p:
+                                    st.error(f"Error al registrar paciente: {msg_p}")
+                                else:
+                                    paciente_id_created = created_p["id"]
+                                    # 2. Crear turno
+                                    ok_t, msg_t, created_t = create_turno({
+                                        "paciente_id": paciente_id_created,
+                                        "fecha": rapido_fecha.isoformat(),
+                                        "hora_inicio": rapido_hora,
+                                        "hora_fin": rapido_h_fin,
+                                        "duracion_minutos": rapido_dur,
+                                        "estado": "Pendiente",
+                                        "monto_coseguro": float(rapido_cos),
+                                        "estado_pago": "Pendiente",
+                                        "notas": rapido_notas
+                                    })
+                                    if not ok_t or not created_t:
+                                        st.error(f"Error al crear turno: {msg_t}")
+                                    else:
+                                        # 3. Generar token de registro y URLs
+                                        reg_token_obj = create_registration_token(
+                                            paciente_id=paciente_id_created,
+                                            turno_id=created_t.get("id"),
+                                            nombre_inicial=rapido_nombre.strip(),
+                                            telefono_inicial=rapido_tel.strip()
+                                        )
+                                        f_formateada = rapido_fecha.strftime('%d/%m/%Y')
+                                        h_formateada = rapido_hora.strftime('%H:%M')
+                                        
+                                        reg_link_str = generate_registration_link(reg_token_obj["token"])
+                                        wa_url_rapido = generate_registration_whatsapp_url(
+                                            phone=rapido_tel.strip(),
+                                            paciente_nombre=rapido_nombre.strip(),
+                                            token=reg_token_obj["token"],
+                                            turno_fecha=f_formateada,
+                                            turno_hora=h_formateada,
+                                            clinic_name=clinic_name
+                                        )
+                                        
+                                        turno_gcal_data = {
+                                            "fecha": rapido_fecha.isoformat(),
+                                            "hora_inicio": rapido_hora,
+                                            "hora_fin": rapido_h_fin,
+                                            "paciente_nombre": rapido_nombre.strip(),
+                                            "paciente_obra_social": rapido_os.strip() or "Particular",
+                                            "notas": rapido_notas
+                                        }
+                                        gcal_url_rapido = generate_turno_google_url(turno_gcal_data, clinic_name=clinic_name)
+
+                                        st.session_state.reciente_turno_agendado = {
+                                            "nombre": rapido_nombre.strip(),
+                                            "telefono": rapido_tel.strip(),
+                                            "fecha_str": f_formateada,
+                                            "hora_str": h_formateada,
+                                            "wa_url": wa_url_rapido,
+                                            "gcal_url": gcal_url_rapido,
+                                            "reg_link": reg_link_str
+                                        }
+                                        st.session_state.agenda_date = rapido_fecha
+                                        st.rerun()
+
+        # TAB 2: PACIENTE REGISTRADO EXISTENTE
+        with tab_existente:
+            pacientes_list = get_pacientes(activo_only=True)
+            if not pacientes_list:
+                st.info("No hay pacientes registrados aún. Podés usar la pestaña 'Carga Rápida' arriba para agendar tu primer turno.")
+            else:
+                with st.form("form_nuevo_turno_direct", clear_on_submit=False):
+                    col_f_ag1, col_f_ag2 = st.columns([1.5, 2])
+                    with col_f_ag1:
+                        fecha_turno_sel = st.date_input("Fecha del Turno *", value=st.session_state.agenda_date, key="dir_f_in")
+                    with col_f_ag2:
+                        paciente_options = {p["nombre_completo"]: p["id"] for p in pacientes_list}
+                        nombre_sel = st.selectbox("Seleccionar Paciente *", list(paciente_options.keys()))
+                        paciente_id_sel = paciente_options[nombre_sel]
+
+                    paciente_obj = next((p for p in pacientes_list if p["id"] == paciente_id_sel), {})
+                    p_os_actual = paciente_obj.get('obra_social', 'Particular') if paciente_obj else 'Particular'
+                    p_cos_default = float(paciente_obj.get('monto_coseguro_default', 0) or 0) if paciente_obj else 0.0
+                    is_part_ag = (str(p_os_actual).lower().strip() == 'particular')
+
+                    if paciente_obj:
+                        ses_r = paciente_obj.get("sesiones_realizadas", 0)
+                        ses_t = paciente_obj.get("sesiones_totales", 10)
+                        restantes = max(0, ses_t - ses_r)
+                        st.markdown(
+                            f"📋 **Cobertura:** {'👤 Particular' if is_part_ag else f'🏥 {p_os_actual}'} | "
+                            f"💵 **{'Valor Sesión:' if is_part_ag else 'Coseguro:'}** ${p_cos_default:,.2f} | "
+                            f"🎟️ **Sesiones Restantes:** {restantes} de {ses_t}"
                         )
 
-                        if not is_valid:
-                            st.error(f"❌ {overlap_msg}")
-                        else:
-                            ok, msg, new_turno = create_turno({
-                                "paciente_id": paciente_id_sel,
-                                "fecha": fecha_turno_sel.isoformat(),
-                                "hora_inicio": hora_inicio_sel,
-                                "hora_fin": hora_fin_calc,
-                                "duracion_minutos": duracion_sel,
-                                "estado": turno_estado_ini,
-                                "monto_coseguro": float(monto_coseguro_turno),
-                                "estado_pago": "Pendiente",
-                                "notas": turno_notas
-                            })
+                    col_h1, col_h2, col_cos = st.columns([1.2, 1.2, 1.6])
+                    with col_h1:
+                        hora_inicio_sel = st.time_input("Hora de Inicio", value=time(8, 30), key="dir_h_in")
+                    with col_h2:
+                        duracion_sel = st.selectbox("Duración de la Sesión", [30, 45, 60], index=1, key="dir_dur_in")
+                    with col_cos:
+                        lbl_monto_ag = "Valor Sesión ($)" if is_part_ag else "Monto Coseguro ($)"
+                        monto_coseguro_turno = st.number_input(
+                            lbl_monto_ag,
+                            min_value=0.0,
+                            step=500.0,
+                            value=p_cos_default,
+                            help="Monto de cobro manual para esta sesión."
+                        )
+                    
+                    dt_temp = datetime.combine(fecha_turno_sel, hora_inicio_sel) + timedelta(minutes=duracion_sel)
+                    hora_fin_calc = dt_temp.time()
 
-                            if ok:
-                                st.success(f"✅ ¡Turno agendado exitosamente para **{nombre_sel}** el día **{fecha_turno_sel.strftime('%d/%m/%Y')}**!")
-                                st.session_state.agenda_date = fecha_turno_sel
-                                st.session_state.agenda_view_mode = "🗓️ Grilla Mensual"
-                                
-                                turno_data_for_gcal = {
+                    col_n1, col_n2 = st.columns([2, 1])
+                    with col_n1:
+                        turno_notas = st.text_input("Tratamiento previsto / Notas", placeholder="Ej: Fisioterapia + ejercicios McKenzie")
+                    with col_n2:
+                        turno_estado_ini = st.selectbox("Estado Inicial", ["Pendiente", "Asistió"])
+
+                    btn_agendar = st.form_submit_button("📅 Confirmar y Agendar Turno", type="primary", use_container_width=True)
+
+                    if btn_agendar:
+                        h_ini_val = hora_inicio_sel.hour * 60 + hora_inicio_sel.minute
+                        h_fin_val = hora_fin_calc.hour * 60 + hora_fin_calc.minute
+
+                        if h_ini_val < WORK_START_HOUR * 60 or h_fin_val > WORK_END_HOUR * 60:
+                            st.error(f"El turno debe estar dentro del horario de atención ({WORK_START_HOUR}:00 a {WORK_END_HOUR}:00 hs).")
+                        else:
+                            is_valid, count_overlap, overlap_msg = check_turnos_overlap(
+                                target_date=fecha_turno_sel,
+                                hora_inicio=hora_inicio_sel,
+                                hora_fin=hora_fin_calc
+                            )
+
+                            if not is_valid:
+                                st.error(f"❌ {overlap_msg}")
+                            else:
+                                ok, msg, new_turno = create_turno({
+                                    "paciente_id": paciente_id_sel,
                                     "fecha": fecha_turno_sel.isoformat(),
                                     "hora_inicio": hora_inicio_sel,
                                     "hora_fin": hora_fin_calc,
-                                    "paciente_nombre": nombre_sel,
-                                    "paciente_obra_social": paciente_obj.get("obra_social", "Particular"),
+                                    "duracion_minutos": duracion_sel,
+                                    "estado": turno_estado_ini,
+                                    "monto_coseguro": float(monto_coseguro_turno),
+                                    "estado_pago": "Pendiente",
                                     "notas": turno_notas
-                                }
-                                gcal_url_new = generate_turno_google_url(turno_data_for_gcal, clinic_name=clinic_name)
-                                
-                                tel_p = paciente_obj.get("telefono", "")
-                                if tel_p:
-                                    wa_conf = template_confirmacion_turno(
+                                })
+
+                                if ok:
+                                    f_formateada = fecha_turno_sel.strftime('%d/%m/%Y')
+                                    h_formateada = hora_inicio_sel.strftime('%H:%M')
+                                    tel_p = paciente_obj.get("telefono", "")
+                                    
+                                    turno_data_for_gcal = {
+                                        "fecha": fecha_turno_sel.isoformat(),
+                                        "hora_inicio": hora_inicio_sel,
+                                        "hora_fin": hora_fin_calc,
+                                        "paciente_nombre": nombre_sel,
+                                        "paciente_obra_social": paciente_obj.get("obra_social", "Particular"),
+                                        "notas": turno_notas
+                                    }
+                                    gcal_url_new = generate_turno_google_url(turno_data_for_gcal, clinic_name=clinic_name)
+                                    
+                                    reg_tok_ex = create_registration_token(paciente_id_sel, new_turno.get("id"), nombre_sel, tel_p)
+                                    reg_link_ex = generate_registration_link(reg_tok_ex["token"])
+                                    
+                                    wa_conf = template_confirmacion_turno_con_link(
                                         nombre_paciente=nombre_sel,
-                                        fecha_str=fecha_turno_sel.strftime('%d/%m/%Y'),
-                                        hora_str=hora_inicio_sel.strftime('%H:%M'),
+                                        fecha_str=f_formateada,
+                                        hora_str=h_formateada,
                                         duracion_minutos=duracion_sel,
+                                        registro_link=reg_link_ex if not paciente_obj.get("ficha_completada") else None,
                                         consultorio=clinic_name,
                                         gcal_url=gcal_url_new
                                     )
                                     url_conf = generate_whatsapp_url(tel_p, wa_conf)
-                                    st_html(
-                                        f'<a href="{url_conf}" target="_blank" class="btn-wa" style="margin-right: 10px;">📲 Enviar WhatsApp a {nombre_sel}</a>'
-                                        f'<a href="{gcal_url_new}" target="_blank" class="btn-gcal">📅 Añadir a Google Calendar</a>'
-                                    )
-                                st.rerun()
-                            else:
-                                st.error(f"Error al agendar turno: {msg}")
+                                    
+                                    st.session_state.reciente_turno_agendado = {
+                                        "nombre": nombre_sel,
+                                        "telefono": tel_p,
+                                        "fecha_str": f_formateada,
+                                        "hora_str": h_formateada,
+                                        "wa_url": url_conf,
+                                        "gcal_url": gcal_url_new,
+                                        "reg_link": reg_link_ex if not paciente_obj.get("ficha_completada") else None
+                                    }
+                                    st.session_state.agenda_date = fecha_turno_sel
+                                    st.rerun()
+                                else:
+                                    st.error(f"Error al agendar turno: {msg}")

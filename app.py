@@ -28,10 +28,24 @@ from views.agenda import render_agenda_view
 from views.pacientes import render_pacientes_view
 from views.historial import render_historial_view
 from views.configuracion import render_configuracion_view
+from views.registro_paciente import render_registro_paciente_view
+from utils.registration import (
+    get_unread_notifications,
+    mark_notification_as_read,
+    mark_all_notifications_as_read
+)
 
 def main():
     # Inyectar estilos visuales CSS
     inject_custom_css()
+
+    # ==============================================================================
+    # VERIFICACIÓN DE ENLACE PÚBLICO DE ALTA DE PACIENTE / REGISTRO
+    # ==============================================================================
+    public_token = st.query_params.get("token") or st.query_params.get("registro")
+    if public_token:
+        render_registro_paciente_view(public_token)
+        return
 
     # ==============================================================================
     # VERIFICACIÓN DE AUTENTICACIÓN
@@ -44,6 +58,7 @@ def main():
     user_name = current_user.get("nombre", "Usuario")
     user_role = current_user.get("rol", "kinesio")
     app_config = get_app_config()
+
 
     # ==============================================================================
     # SIDEBAR: LOGO DINÁMICO, PERFIL, NAVEGACIÓN Y EASTER EGG
@@ -86,6 +101,44 @@ def main():
             </div>
             """
         )
+
+        # NOTIFICACIONES / AVISOS DE FICHAS Y PEDIDOS MÉDICOS COMPLETADOS
+        unread_notifs = get_unread_notifications()
+        if unread_notifs:
+            count_n = len(unread_notifs)
+            st_html(
+                f"""
+                <div style="background: linear-gradient(135deg, rgba(234, 88, 12, 0.15), rgba(249, 115, 22, 0.25)); border: 1px solid #f97316; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.82rem; font-weight: 800; color: #fdba74;">🔔 {count_n} {'Aviso de Alta' if count_n == 1 else 'Avisos de Altas'}</span>
+                        <span style="background: #ea580c; color: white; border-radius: 999px; padding: 1px 6px; font-size: 0.7rem; font-weight: bold;">+{count_n}</span>
+                    </div>
+                </div>
+                """
+            )
+            with st.expander(f"📥 Ver avisos pendientes ({count_n})", expanded=True):
+                for n in unread_notifs[:5]:
+                    n_id = n.get("id")
+                    p_nom = n.get("paciente_nombre", "Paciente")
+                    has_doc = n.get("tiene_pedido_medico", False)
+                    doc_tag = " 📄 (Pedido médico)" if has_doc else ""
+                    st.markdown(f"<div style='font-size: 0.78rem; color: #f8fafc; margin-bottom: 4px;'>• <b>{p_nom}</b> completó ficha{doc_tag}</div>", unsafe_allow_html=True)
+                    c_n1, c_n2 = st.columns([1.2, 1])
+                    with c_n1:
+                        if st.button("👥 Ver", key=f"btn_notif_goto_{n_id}", use_container_width=True):
+                            st.session_state.paciente_seleccionado_id = n.get("paciente_id")
+                            st.session_state.nav_selection = "👥 Gestión de Pacientes"
+                            st.query_params["page"] = "pacientes"
+                            mark_notification_as_read(n_id)
+                            st.rerun()
+                    with c_n2:
+                        if st.button("✓ Visto", key=f"btn_notif_ok_{n_id}", use_container_width=True):
+                            mark_notification_as_read(n_id)
+                            st.rerun()
+                if count_n > 1:
+                    if st.button("Marcar todos leídos", key="btn_notif_all_read", use_container_width=True):
+                        mark_all_notifications_as_read()
+                        st.rerun()
 
         # MENÚ DE NAVEGACIÓN SEGÚN ROL
         st.markdown("<p style='font-size: 0.75rem; font-weight: 700; color: #64748b; letter-spacing: 0.5px; margin-bottom: 6px;'>MENÚ PRINCIPAL</p>", unsafe_allow_html=True)

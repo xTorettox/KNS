@@ -114,18 +114,39 @@ def template_reprogramacion_turno(
         f"Por favor confirmanos si te queda cómodo este horario. ¡Muchas gracias!"
     )
 
-def template_aviso_sesiones_completadas(
+def template_alta_paciente_link(
     nombre_paciente: str,
-    sesiones_realizadas: int,
-    sesiones_totales: int,
-    obra_social: Optional[str] = None,
-    consultorio: str = "KNS Kinesiología"
+    registro_link: str,
+    consultorio: str = "KNS Kinesiología",
+    fecha_str: Optional[str] = None,
+    hora_str: Optional[str] = None
 ) -> str:
-    """Aviso al paciente cuando está por agotar o agotó su orden de sesiones."""
-    os_text = f" ({obra_social})" if obra_social else ""
+    """Mensaje para enviar el formulario de alta de datos y pedido médico al paciente."""
+    turno_info = f" antes de tu turno del *{fecha_str} a las {hora_str} hs*" if (fecha_str and hora_str) else ""
     return (
-        f"📋 Estimado/a {nombre_paciente}, te escribimos de *{consultorio}*.\n\n"
-        f"Queremos informarte que has completado *{sesiones_realizadas} de {sesiones_totales} sesiones* autorizadas por tu cobertura médica{os_text}.\n\n"
-        f"🩺 Para poder continuar con tu tratamiento y rehabilitación, te solicitamos gestionar una *nueva orden médica* con tu traumatólogo/médico tratante.\n\n"
-        f"Cualquier consulta quedamos a tu entera disposición. ¡Saludos!"
+        f"👋 Hola {nombre_paciente}, ¿cómo estás? Te escribimos de *{consultorio}*.\n\n"
+        f"📋 Para agilizar tu atención y preparar tu ficha médica{turno_info}, te pedimos por favor completar tus datos y adjuntar la foto o archivo de tu *pedido médico / orden* ingresando a este enlace:\n\n"
+        f"🔗 {registro_link}\n\n"
+        f"¡Muchas gracias! Si tenés alguna consulta, escribinos por este medio."
     )
+
+def template_confirmacion_turno_con_link(
+    nombre_paciente: str,
+    fecha_str: str,
+    hora_str: str,
+    duracion_minutos: int = 45,
+    registro_link: Optional[str] = None,
+    consultorio: str = "KNS Kinesiología",
+    gcal_url: Optional[str] = None
+) -> str:
+    """Mensaje tras agendar un nuevo turno incluyendo el link de pre-alta si la ficha está pendiente."""
+    cal_txt = f"\n\n📅 Agregalo a tu Google Calendar:\n{gcal_url}" if gcal_url else ""
+    ficha_txt = f"\n\n📋 *Completá tus datos y orden médica antes de asistir:*\n🔗 {registro_link}" if registro_link else ""
+    return (
+        f"✅ ¡Hola {nombre_paciente}! Tu turno en *{consultorio}* ha sido agendado con éxito:\n\n"
+        f"🗓 *Fecha:* {fecha_str}\n"
+        f"⏰ *Horario:* {hora_str} hs ({duracion_minutos} min){cal_txt}{ficha_txt}\n\n"
+        f"Por favor recordá traer tu orden médica física el día de la sesión si corresponde.\n"
+        f"¡Te esperamos!"
+    )
+

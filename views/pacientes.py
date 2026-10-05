@@ -29,7 +29,13 @@ from utils.supabase_client import (
 from utils.whatsapp import (
     generate_whatsapp_url,
     template_aviso_sesiones_completadas,
-    template_recordatorio_turno
+    template_recordatorio_turno,
+    template_alta_paciente_link
+)
+from utils.registration import (
+    create_registration_token,
+    generate_registration_link,
+    generate_registration_whatsapp_url
 )
 from utils.ui import (
     st_html,
@@ -242,12 +248,26 @@ def render_pacientes_view():
         afiliado_display = afiliado_act if (afiliado_act and not is_particular) else ("Particular (Sin credencial)" if is_particular else "No registrado")
         obs_html = f'<div style="font-size: 0.82rem; color: #94a3b8; margin-top: 6px;"><b>Observaciones:</b> {notas_act}</div>' if notas_act else ""
 
+        email_act = paciente_actual.get("email", "")
+        dir_act = paciente_actual.get("direccion", "")
+        loc_act = paciente_actual.get("localidad", "")
+        prov_act = paciente_actual.get("provincia", "")
+        plan_act = paciente_actual.get("plan_obra_social", "")
+        sexo_act = paciente_actual.get("sexo", "")
+        is_ficha_comp = bool(paciente_actual.get("ficha_completada", False))
+        domicilio_str = f"{dir_act}, {loc_act} ({prov_act})".strip(" ,()") if (dir_act or loc_act or prov_act) else "No informado"
+
+        badge_ficha_p_html = '<span style="font-size: 0.75rem; padding: 3px 8px; border-radius: 9999px; background: rgba(56,189,248,0.2); color: #38bdf8; font-weight: bold; border: 1px solid rgba(56,189,248,0.4);">📋 FICHA COMPLETADA</span>' if is_ficha_comp else '<span style="font-size: 0.75rem; padding: 3px 8px; border-radius: 9999px; background: rgba(251,146,60,0.2); color: #fb923c; font-weight: bold; border: 1px solid rgba(251,146,60,0.4);">📝 FICHA PENDIENTE</span>'
+
         # Encabezado de la Ficha
         st_html(
             f"""
             <div class="kns-card">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                    <h3 style="margin: 0; color: #38bdf8;">📋 Ficha de {nom_act}</h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3 style="margin: 0; color: #38bdf8;">📋 Ficha de {nom_act}</h3>
+                        {badge_ficha_p_html}
+                    </div>
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <span style="font-size: 0.8rem; padding: 4px 10px; border-radius: 9999px; background: {'rgba(34,197,94,0.2)' if is_particular else 'rgba(56,189,248,0.2)'}; color: {'#4ade80' if is_particular else '#38bdf8'}; font-weight: bold;">
                             {'👤 PARTICULAR' if is_particular else f'🏥 {os_act}'}
@@ -260,8 +280,10 @@ def render_pacientes_view():
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 14px; font-size: 0.9rem; color: #cbd5e1;">
                     <div style="display: flex; align-items: center; gap: 6px;"><span style="background: #0284c7; color: white; font-size: 0.72rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;">DNI</span> <b>{dni_act}</b></div>
                     <div>🎂 <b>F. Nacimiento:</b> {fn_display} ({edad_act} años)</div>
-                    <div>🪪 <b>N° Afiliado:</b> {afiliado_display}</div>
+                    <div>🪪 <b>N° Afiliado:</b> {afiliado_display} {f'({plan_act})' if plan_act else ''}</div>
                     <div>📞 <b>Teléfono:</b> {tel_act or 'No registrado'}</div>
+                    <div>📧 <b>Email:</b> {email_act or 'No registrado'}</div>
+                    <div>📍 <b>Domicilio:</b> {domicilio_str}</div>
                     <div>💵 <b>{'Valor Consulta:' if is_particular else 'Coseguro:'}</b> <span style="color: #4ade80; font-weight: 700;">${cos_act:,.2f}</span></div>
                 </div>
                 <div style="margin-top: 12px; font-size: 0.9rem; background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 8px;">
@@ -277,17 +299,27 @@ def render_pacientes_view():
         st_html(render_session_progress(ses_real_act, ses_tot_act))
         
         # Botones de Acción Contextual
-        col_wa_p, col_ed_p = st.columns([2, 1])
+        col_wa_p, col_reg_p, col_ed_p = st.columns([1.5, 1.5, 1])
         with col_wa_p:
             if ses_rest_act <= 1:
                 msg_p = template_aviso_sesiones_completadas(nom_act, ses_real_act, ses_tot_act, os_act)
-                btn_wa_txt = "📲 Solicitar Nueva Orden por WhatsApp"
+                btn_wa_txt = "📲 Solicitar Nueva Orden"
             else:
                 msg_p = f"Hola {nom_act}, te escribimos de KNS Kinesiología para coordinar tus próximas sesiones."
-                btn_wa_txt = "📲 Contactar por WhatsApp"
+                btn_wa_txt = "📲 Contactar WhatsApp"
             
             wa_link_p = generate_whatsapp_url(tel_act, msg_p)
             st_html(f'<a href="{wa_link_p}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center; margin-bottom: 8px;">{btn_wa_txt}</a>')
+
+        with col_reg_p:
+            with st.popover("🔗 Enviar Link Ficha", use_container_width=True):
+                st.markdown("###### Enlace de Alta y Pedido Médico")
+                st.caption("Enviar al paciente para que complete sus datos y adjunte su orden médica:")
+                reg_tok_p = create_registration_token(sel_id, None, nom_act, tel_act)
+                wa_link_f = generate_registration_whatsapp_url(tel_act, nom_act, reg_tok_p["token"], clinic_name="KNS Kinesiología")
+                st_html(f'<a href="{wa_link_f}" target="_blank" class="btn-wa" style="width: 100%; text-align: center; justify-content: center; margin-bottom: 6px;">📲 Enviar por WhatsApp</a>')
+                st.caption("Enlace directo:")
+                st.code(f"?registro={reg_tok_p['token']}", language="text")
 
         with col_ed_p:
             with st.popover("⚙️ Modificar Ficha", use_container_width=True):
